@@ -1,0 +1,30 @@
+@import "../../entry-point/variables";
+
+.main {
+    flex: 1 1 auto;
+    > .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    &__title {
+        text-align: center;
+    }
+    &__users {
+        margin-top: 15px;
+        &--user {
+            min-width: 150px;
+        }
+    }
+    &__server {
+        margin-top: 15px;
+        &--record {
+            font-size: $font-size__server-record;
+            &-timestamp {
+                color: gray;
+            }
+            &-message {
+                color: black;
+            }
+        }
+    }
+}

@@ -1,0 +1,19 @@
+@mixin init-flex {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+html {
+    @include init-flex;
+}
+
+body {
+    flex: auto;
+    @include init-flex;
+}
+
+#app, .app {
+    flex: auto;
+    @include init-flex;
+}

@@ -1,0 +1,15 @@
+{
+  "client": {
+    "host": "localhost",
+    "port": 3000
+  },
+  "chatServer": {
+    "host": "localhost",
+    "port": 8080
+  },
+  "db": {
+    "name": "chat",
+    "host": "localhost",
+    "port": 27017
+  }
+}
