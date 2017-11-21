@@ -9,6 +9,7 @@ const UsersSchema = new Schema({
     isBanned: Boolean,
     isMuted: Boolean,
     color: String,
+    versionKey: false
 });
 
 module.exports = model('Users', UsersSchema);

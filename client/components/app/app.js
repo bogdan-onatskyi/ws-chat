@@ -9,7 +9,7 @@ import './app.scss';
 const Index = () => (
     <div className="app">
         {/*<Header text="Chat application"/>*/}
-        <MainView/>
+        <MainView historyLength={10}/>
         {/*<Footer/>*/}
     </div>
 );

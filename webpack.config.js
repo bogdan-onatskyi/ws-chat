@@ -3,7 +3,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const entryPoint = './client/entry-point';
 
-console.log('1', __dirname);
+console.log('1', `entryPoint = ${entryPoint}`);
+console.log('1', `__dirname = ${__dirname}`);
 
 module.exports = {
     entry: `${entryPoint}/index.js`,

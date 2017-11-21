@@ -1,93 +1,102 @@
-const path = require('path');
+const appConfig = require('./config.json');
 
-const appConfig = require('./config.json').chatServer;
-
-const chatServer = require('websocket').server;
 const chatServerPort = appConfig.chatServer.port;
+const chatServer = require('websocket').server;
 
-const history = [];
-const clients = [];
+const http = require('http');
 
-function htmlEntities(str) {
-    return String(str)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+const historyLength = 100;
 
+let history = [];
+let clients = [];
+
+let connectedUser = false;
+
+// function htmlEntities(str) {
+//     return String(str)
+//         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+//         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// }
+//
 // // Array with some colors
-// var colors = ['red', 'green', 'blue', 'magenta', 'purple', 'plum', 'orange'];
+// const colors = ['red', 'green', 'blue', 'magenta', 'purple', 'plum', 'orange'];
 // // ... in random order
 // colors.sort(function (a, b) {
 //     return Math.random() > 0.5;
 // });
 
-const httpServer = require('./dev-server');
+const httpServer = http.createServer((request, response) => {
+    // Not important for us. We're writing WebSocket server,
+    // not HTTP server
+});
+httpServer.listen(chatServerPort, () => {
+    console.log(`${new Date()} chatServer is listening on port ${chatServerPort}`);
+});
 const wsServer = new chatServer({httpServer});
 
-// This callback function is called every time someone
-// tries to connect to the WebSocket server
 wsServer.on('request', request => {
     console.log(`${new Date()} Connection from origin ${request.origin}.`);
 
-    // accept connection - you should check 'request.origin' to
-    // make sure that client is connecting from your website
-    // (http://en.wikipedia.org/wiki/Same_origin_policy)
     const connection = request.accept(null, request.origin);
 
+    const index = clients.push(connection) - 1;
+    console.log(`${new Date()} Connection accepted.`);
 
-    // we need to know client index to remove them on 'close' event
-    var index = clients.push(connection) - 1;
-    var userName = false;
-    var userColor = false;
-    console.log((new Date()) + ' Connection accepted.');
-    // send back chat history
     if (history.length > 0) {
-        connection.sendUTF(
-            JSON.stringify({type: 'history', data: history}));
+        connection.sendUTF(JSON.stringify(history));
     }
-    // user sent some message
-    connection.on('message', function (message) {
-        if (message.type === 'utf8') { // accept only text
-            // first message sent by user is their name
-            if (userName === false) {
-                // remember user name
-                userName = htmlEntities(message.utf8Data);
-                // get random color and send it back to the user
-                userColor = colors.shift();
-                connection.sendUTF(
-                    JSON.stringify({type: 'color', data: userColor}));
-                console.log((new Date()) + ' User is known as: ' + userName
-                    + ' with ' + userColor + ' color.');
-            } else { // log and broadcast the message
-                console.log((new Date()) + ' Received Message from '
-                    + userName + ': ' + message.utf8Data);
 
-                // we want to keep history of all sent messages
-                var obj = {
-                    time: (new Date()).getTime(),
-                    text: htmlEntities(message.utf8Data),
-                    author: userName,
-                    color: userColor
-                };
-                history.push(obj);
-                history = history.slice(-100);
-                // broadcast message to all connected clients
-                var json = JSON.stringify({type: 'message', data: obj});
-                for (var i = 0; i < clients.length; i++) {
-                    clients[i].sendUTF(json);
-                }
-            }
+    connection.on('message', msg => {
+        const {userName, message, password} = JSON.parse(msg.utf8Data);
+
+        if (password) {
+            // todo Запрос в базу данных
+            const setupDBConnection = require('./db/setup-connection');
+            setupDBConnection();
+
+            const serviceUsers = require('./db/service/service-users');
+            serviceUsers.findUserByPassword(password)
+                .then((userName) => {
+                    console.log(`userName from db = ${userName}`);
+                    return userName
+                })
+                .catch((err) => {
+                    console.log(`Didn't find userName in db. Error: ${err}`);
+                    return err
+                });
+            console.log(`Didn't find userName in db.`);
+        }
+
+        if (connectedUser === false) {
+            connectedUser = userName;
+        }
+
+        console.log(`${new Date()} Received Message from ${userName}: ${message}`);
+
+        const obj = {
+            timeStamp: (new Date()).getTime(),
+            userName,
+            message
+        };
+
+        history.push(obj);
+        history = history.slice(-historyLength);
+
+        const json = JSON.stringify(obj);
+        for (let i = 0; i < clients.length; i++) {
+            clients[i].sendUTF(json);
         }
     });
-    // user disconnected
-    connection.on('close', function (connection) {
-        if (userName !== false && userColor !== false) {
-            console.log((new Date()) + " Peer "
-                + connection.remoteAddress + " disconnected.");
+
+    connection.on('close', connection => {
+        if (connectedUser !== false) {
+            console.log(`${new Date()} Peer ${connection.remoteAddress} disconnected.`);
+
             // remove user from the list of connected clients
             clients.splice(index, 1);
+
             // push back user's color to be reused by another user
-            colors.push(userColor);
+            // colors.push(userColor);
         }
     });
 });

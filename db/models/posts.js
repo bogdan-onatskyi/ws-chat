@@ -6,6 +6,7 @@ const PostsSchema = new Schema({
     timeStamp: String,
     userId: String,
     message: String,
+    versionKey: false
 });
 
 module.exports = model('Posts', PostsSchema);

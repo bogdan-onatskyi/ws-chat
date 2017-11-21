@@ -9,7 +9,8 @@ const NODE_ENV = 'development';
 
 const entryPoint = './client/entry-point';
 
-console.log('2', __dirname);
+console.log('2', `entryPoint = ${entryPoint}`);
+console.log('2', `__dirname = ${__dirname}`);
 
 module.exports = merge(common, {
     entry: [

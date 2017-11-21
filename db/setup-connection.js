@@ -9,5 +9,6 @@ module.exports = () => {
     mongoose.connect(`mongodb://${host}:${port}/${name}`, {
         useMongoClient: true,
     })
+    mongoose.connect(`mongodb://${host}:${port}/${name}`)
         .catch(err => console.log(`Database connection Error ${err}`));
 };
