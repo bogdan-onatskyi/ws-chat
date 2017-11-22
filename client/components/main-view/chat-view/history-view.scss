@@ -1,6 +1,17 @@
+@import "../../../entry-point/variables";
+
+.history {
+    min-height: 400px;
+}
+
 .post {
     margin: 0 2px;
     &__timeStamp {
-
+        font-size: 10px;
+        //font-size: $font-size__time-stamp;
+        color: gray;
+    }
+    &-message {
+        color: black;
     }
 }

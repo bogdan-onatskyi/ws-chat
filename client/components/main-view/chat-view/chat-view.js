@@ -65,28 +65,29 @@ class ChatView extends Component {
 
         let data;
         try {
-            data = JSON.parse(event.data); // data is array
+            data = JSON.parse(event.data);
         }
         catch (err) {
             console.log(`Ошибка JSON.parse(event.data) = ${err}`);
             return;
         }
 
-        data.forEach(obj => {
-            // obj === {
-            //     timeStamp: data.timeStamp,
-            //     userName: data.userName,
-            //     message: data.message
-            // }
-            obj.isAdmin = false;
-            obj.isBanned = false;
-            obj.isMuted = false;
-            obj.color = 'green';
-        });
+        const obj = {
+            timeStamp: data.timeStamp,
+            userName: data.userName,
+            message: data.message,
+            isAdmin: false,
+            isBanned: false,
+            isMuted: false,
+            color: 'green',
+        };
+
+        const array = this.state.history;
+        array.push(obj);
 
         this.setState({
             ...this.state,
-            history: [...data.slice(-this.props.historyLength)]
+            history: [...array.slice(-this.props.historyLength)]
         });
     };
 
@@ -94,7 +95,7 @@ class ChatView extends Component {
         this.setState({
             ...this.state,
             message: e.target.value
-        })
+        });
     };
 
     handleSendMessage = (e) => {
@@ -133,9 +134,6 @@ class ChatView extends Component {
                 </form>
 
                 <Button bsStyle="primary" onClick={handleExitChat}>Exit...</Button>
-
-                <p>{this.state.userName}</p>
-                <p>{this.state.message}</p>
             </div>
         );
     };

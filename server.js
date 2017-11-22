@@ -1,5 +1,6 @@
 const path = require("path");
 const express = require('express');
+const app = express();
 
 const http = require('http');
 const url = require('url');
@@ -14,8 +15,6 @@ const {toString} = require('./utils/utils');
 
 const PORT = 3000;
 const PUBLIC_PATH = path.join(__dirname, 'public');
-
-const app = express();
 
 if (process.env.NODE_ENV === 'development') {
     const webpack = require('webpack');
@@ -65,16 +64,16 @@ app.use(session({
 //     store: mongoStore(mongoStoreConnectionArgs())
 // }));
 
-const users = [
+const users = [ // todo Заменить на базу данных
     {userName: 'user', password: 'password'},
     {userName: 'user1', password: 'password1'},
     {userName: 'user2', password: 'password2'},
     {userName: 'user3', password: 'password3'},
 ];
 
-const loggedUsers = [];
-
+let isChatServerRunning = false;
 const chatHistory = [];
+const loggedUsers = []; // Сессии клиентов
 
 app.post('/login', function (req, res) {
     const reqData = req.body;
@@ -82,7 +81,7 @@ app.post('/login', function (req, res) {
     console.log('');
     console.log(toString('You posted:', reqData));
 
-    let retData = {
+    let resData = {
         userName: '',
         password: '',
         auth: 'denied'
@@ -90,62 +89,142 @@ app.post('/login', function (req, res) {
 
     // todo connect to db
     users.forEach(user => {
-        if (reqData.userName === user.userName && reqData.password === user.password) {
-            retData = {
+        if (reqData.userName === user.userName && reqData.password === user.password)
+            resData = {
                 userName: user.userName,
                 password: user.password,
                 auth: 'ok'
             };
-        }
     });
 
-    req.session.userName = retData.userName;
-    console.log(`req.session.userName = ${req.session.userName}`);
+    req.session.userName = resData.userName; // todo auth
 
-    if (retData.auth === 'ok') {
-        if (loggedUsers.length === 0) { // todo Запустить ws-server
-            console.log('Запустить ws-server...');
+    if (resData.auth === 'ok' && !isChatServerRunning) {
+        const server = http.createServer(app);
+        const wss = new WebSocket.Server({server});
 
+        server.listen(8080, () => {
+            console.log(`Chat server is listening on ${server.address().port}`);
+            isChatServerRunning = true;
+        });
 
-            const server = http.createServer(app);
-            const wss = new WebSocket.Server({server});
+        // Broadcast to all.
+        // wss.broadcast = data => {
+        //     console.log(`broadcast data = ${data}`);
+        //     wss.clients.forEach(client => {
+        //         if (client.readyState === WebSocket.OPEN) {
+        //             client.send(JSON.stringify(data));
+        //             // client.send(JSON.stringify(chatHistory));
+        //         }
+        //     });
+        // };
 
-            wss.on('connection', function connection(ws, req) {
-                const location = url.parse(req.url, true);
-                // You might use location.query.access_token to authenticate or share sessions
-                // or req.headers.cookie (see http://stackoverflow.com/a/16395220/151312)
+        wss.on('connection', ws => {
+            ws.on('message', message => {
+                console.log(`received chat message: ${message}`);
 
-                ws.on('message', function incoming(message) {
-                    console.log(`received: ${message}`);
+                let obj;
+                try {
+                    obj = JSON.parse(message);
+                } catch (err) {
+                    console.log(`JSON.parse error: ${err}`);
+                }
 
-                    let obj;
-                    try {
-                        obj = JSON.parse(message);
-                    } catch (err) {
-                        console.log(`JSON.parse error: ${err}`);
+                obj.timeStamp = (new Date()).getTime();
+
+                wss.clients.forEach(client => {
+                    // if (client !== ws && client.readyState === WebSocket.OPEN) {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(obj));
                     }
-
-                    obj.timeStamp = (new Date()).getTime();
-
-                    chatHistory.push(obj);
-                    ws.send(JSON.stringify(chatHistory));
                 });
             });
-
-            server.listen(8080, function listening() {
-                console.log('Listening on %d', server.address().port);
-            });
-        }
-
-        // loggedUsers.push({
-        //     userName: retData.userName // todo Добавить остальную информацию о пользователе
-        // });
+        });
+        // if (!isChatServerRunning) {
+        //     if (loggedUsers.length === 0) {
+        //         const server = http.createServer(app);
+        //         const wss = new WebSocket.Server({server});
+        //
+        //         wss.on('connection', (ws, req) => {
+        //             const location = url.parse(req.url, true);
+        //             // You might use location.query.access_token to authenticate or share sessions
+        //             // or req.headers.cookie (see http://stackoverflow.com/a/16395220/151312)
+        //
+        //             ws.on('message', message => {
+        //                 console.log(`received: ${message}`);
+        //
+        //                 let obj;
+        //                 try {
+        //                     obj = JSON.parse(message);
+        //                 } catch (err) {
+        //                     console.log(`JSON.parse error: ${err}`);
+        //                 }
+        //
+        //                 obj.timeStamp = (new Date()).getTime();
+        //
+        //                 chatHistory.push(obj);
+        //                 ws.send(JSON.stringify(chatHistory));
+        //             });
+        //         });
+        //
+        //         // const json = JSON.stringify(obj);
+        //         // for (let i = 0; i < clients.length; i++) {
+        //         //     clients[i].sendUTF(json);
+        //         // }
+        //
+        //         server.listen(8080, () => {
+        //             console.log(`Chat server is listening on ${server.address().port}`);
+        //             isChatServerRunning = true;
+        //         });
+        //     }
+        // }
     }
 
-    res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(retData));
+    // if (resData.auth === 'ok') {
+    //     if (!isChatServerRunning) {
+    //         if (loggedUsers.length === 0) {
+    //             const server = http.createServer(app);
+    //             const wss = new WebSocket.Server({server});
+    //
+    //             wss.on('connection', (ws, req) => {
+    //                 const location = url.parse(req.url, true);
+    //                 // You might use location.query.access_token to authenticate or share sessions
+    //                 // or req.headers.cookie (see http://stackoverflow.com/a/16395220/151312)
+    //
+    //                 ws.on('message', message => {
+    //                     console.log(`received: ${message}`);
+    //
+    //                     let obj;
+    //                     try {
+    //                         obj = JSON.parse(message);
+    //                     } catch (err) {
+    //                         console.log(`JSON.parse error: ${err}`);
+    //                     }
+    //
+    //                     obj.timeStamp = (new Date()).getTime();
+    //
+    //                     chatHistory.push(obj);
+    //                     ws.send(JSON.stringify(chatHistory));
+    //                 });
+    //             });
+    //
+    //             // const json = JSON.stringify(obj);
+    //             // for (let i = 0; i < clients.length; i++) {
+    //             //     clients[i].sendUTF(json);
+    //             // }
+    //
+    //             server.listen(8080, () => {
+    //                 console.log(`Chat server is listening on ${server.address().port}`);
+    //                 isChatServerRunning = true;
+    //             });
+    //         }
+    //     }
+    // }
 
-    console.log(toString('Server answered:', retData));
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(resData));
+
+    console.log(toString('Server answered:', resData));
 });
 
 // function loadUserFromDB(req, res, next) {
@@ -170,10 +249,10 @@ app.post('/login', function (req, res) {
 //     console.log('/chat');
 // });
 
-app.all("/", function (req, res) {
+app.all("/", (req, res) => {
     res.sendFile(path.resolve(PUBLIC_PATH, 'index.html'));
 });
 
-app.listen(PORT, function () {
+app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}...`);
 });
