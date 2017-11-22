@@ -1,13 +1,9 @@
+const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-const entryPoint = './client/entry-point';
-
-console.log('1', `entryPoint = ${entryPoint}`);
-console.log('1', `__dirname = ${__dirname}`);
-
 module.exports = {
-    entry: `${entryPoint}/index.js`,
+    entry: path.resolve(__dirname, './client/entry-point/index.js'),
 
     module: {
         rules: [
@@ -38,7 +34,7 @@ module.exports = {
     plugins: [
         new webpack.IgnorePlugin(/caniuse-lite\/data\/regions/),
         new HtmlWebpackPlugin({
-            template: `${entryPoint}/index.html`,
+            template: path.resolve(__dirname, './client/entry-point/index.html'),
             inject: "body"
         })
     ]

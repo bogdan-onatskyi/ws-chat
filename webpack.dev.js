@@ -7,17 +7,12 @@ const common = require('./webpack.config.js');
 
 const NODE_ENV = 'development';
 
-const entryPoint = './client/entry-point';
-
-console.log('2', `entryPoint = ${entryPoint}`);
-console.log('2', `__dirname = ${__dirname}`);
-
 module.exports = merge(common, {
     entry: [
         'react-hot-loader/patch',
         'webpack-hot-middleware/client',
         // 'webpack-hot-middleware/client?reload=true',
-        `${entryPoint}/index.js`,
+        path.resolve(__dirname, './client/entry-point/index.js'),
     ],
 
     output: {
@@ -32,7 +27,7 @@ module.exports = merge(common, {
         rules: [
             {
                 test: /\.html$/,
-                include: [path.resolve(__dirname, 'src')],
+                include: [path.resolve(__dirname, './client/entry-point')],
                 loader: 'html-loader?minimize=false'
             },
             {

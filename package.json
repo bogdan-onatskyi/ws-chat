@@ -4,9 +4,9 @@
   "description": "ws-chat",
   "main": "index.js",
   "scripts": {
-    "start-dev-server": "cross-env NODE_ENV=development node ./dev-server.js",
+    "start-dev-server": "cross-env NODE_ENV=development node ./server.js",
     "build-prod": "cross-env NODE_ENV=production webpack --progress --config webpack.prod.js",
-    "start-server": "nodemon server/server.js"
+    "start-server": "nodemon ./server.js"
   },
   "keywords": [],
   "author": {
@@ -19,11 +19,13 @@
   },
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.17.1",
     "body-parser": "^1.18.2",
     "bootstrap": "^3.3.7",
     "classnames": "^2.2.5",
     "cors": "^2.8.4",
     "express": "^4.16.2",
+    "express-session": "^1.15.6",
     "http": "0.0.0",
     "mongoose": "^4.13.4",
     "react": "^16.1.1",

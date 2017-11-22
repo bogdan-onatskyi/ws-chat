@@ -9,8 +9,6 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 
 const common = require('./webpack.config.js');
 
-const NODE_ENV_GH_PAGES = '';
-
 module.exports = merge(common, {
     output: {
         filename: 'bundle.min.js',
@@ -21,7 +19,7 @@ module.exports = merge(common, {
         rules: [
             {
                 test: /\.html$/,
-                include: [path.resolve(__dirname, 'client')],
+                include: [path.resolve(__dirname, './client/entry-point')],
                 loader: 'html-loader?minimize=true'
             },
             {
@@ -40,7 +38,6 @@ module.exports = merge(common, {
     plugins: [
         new CleanWebpackPlugin(['docs']),
         new webpack.DefinePlugin({
-            'process.env.NODE_ENV_GH_PAGES': JSON.stringify(NODE_ENV_GH_PAGES),
             'process.env.NODE_ENV': JSON.stringify('production'),
         }),
         new UglifyJSPlugin({
