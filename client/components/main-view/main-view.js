@@ -5,8 +5,6 @@ import axios from 'axios';
 import LoginView from './login-view/login-view';
 import ChatView from './chat-view/chat-view';
 
-import {toString} from '../../../utils/utils';
-
 import './main-view.scss';
 
 class MainView extends Component {
@@ -33,14 +31,10 @@ class MainView extends Component {
                             .then(response => {
                                 const {data} = response;
 
-                                console.log(toString('Server answered:', data));
-
                                 this.setState({
                                     ...this.state,
                                     isLoggedIn: data.auth === 'ok'
                                 });
-
-                                console.log(`data.auth = ${data.auth}`);
 
                                 return data;
                             })
@@ -73,6 +67,7 @@ class MainView extends Component {
                 {this.state.isLoggedIn
                     ? <ChatView historyLength={20} serverURL="ws://localhost:8080"
                                 userName={this.state.userName}
+                                password={this.state.password}
                                 handleExitChat={this.handleExitChat}/>
 
                     : <LoginView userName={this.state.userName} password={this.state.password}

@@ -1,5 +1,8 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
+import cn from 'classnames';
+
+import Glyphicon from 'react-bootstrap/es/Glyphicon';
 
 import './history-view.scss';
 
@@ -14,10 +17,23 @@ const addZero = (num, digit = 2) => {
 };
 
 const HistoryView = ({history}) => {
+    const UserMsg = ({type, userName, isAdmin, isBanned, isMuted, color}) => {
+        console.log(` = ${isAdmin}`);
+        return type === 'userMsg'
+            ? <span>
+                <span className="post post__userName"><strong>{userName}</strong></span>
+                {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
+                                       glyph={isMuted ? "remove" : "ok"}/>}
+                {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
+                                       glyph={isBanned ? "volume-off" : "volume-down"}/>}
+              </span>
+            : <span/>
+    };
+
     return (
         <div className="history">
             {history.map((post, index) => {
-                const {timeStamp, userName, isAdmin, isBanned, isMuted, color, message} = post;
+                const {type, timeStamp, userName, isAdmin, isBanned, isMuted, color, message} = post;
                 const date = new Date(timeStamp);
                 const dateStr =
                     `${addZero(date.getDate())}.${addZero(date.getMonth())}.${date.getFullYear()} \
@@ -26,10 +42,8 @@ const HistoryView = ({history}) => {
                 return (
                     <div key={`post_${index}`}>
                         <span className="post post__timeStamp">{dateStr}</span>
-                        <span className="post post__userName"><strong>{userName}</strong></span>
-                        <span className="post post__isAdmin">{isAdmin}</span>
-                        <span className="post post__isBanned">{isBanned}</span>
-                        <span className="post post__isMuted">{isMuted}</span>
+                        <UserMsg type={type} userName={userName} isAdmin={isAdmin}
+                                 isBanned={isBanned} isMuted={isMuted} color={color}/>
                         <span className="post post__message">{message}</span>
                     </div>
                 );

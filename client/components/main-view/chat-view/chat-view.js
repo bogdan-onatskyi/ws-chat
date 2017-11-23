@@ -15,25 +15,83 @@ class ChatView extends Component {
         historyLength: PropTypes.number.isRequired,
         serverURL: PropTypes.string.isRequired,
         userName: PropTypes.string.isRequired,
+        password: PropTypes.string.isRequired,
         handleExitChat: PropTypes.func.isRequired,
     };
 
     state = {
+        userId: null,
         userName: this.props.userName,
-        message: 'message',
+        password: this.props.password,
+        isAdmin: false,
+        isBanned: false,
+        isMuted: false,
+        color: 'green',
+
+        message: '',
 
         history: []
     };
 
     componentDidMount() {
-        // todo Открыть соединение
-        console.log('Открыть соединение');
-
         this.socket = new WebSocket(this.props.serverURL);
 
-        this.socket.onopen = (event) => {
+        this.socket.onopen = event => {
             console.log('Соединение установлено.');
-            this.parseHistory(event);
+            // this.parseHistory(event);
+
+            const obj = {
+                type: 'initMsg',
+                // userId: this.state.userId,
+                userName: this.state.userName,
+                password: this.state.password,
+                // isAdmin: this.state.isAdmin,
+                // isBanned: this.state.isBanned,
+                // isMuted: this.state.isMuted,
+                // color: this.state.color,
+            };
+
+            this.socket.send(JSON.stringify(obj));
+
+            obj.type = 'userMsg';
+            obj.message = null;
+            this.socket.send(JSON.stringify(obj));
+        };
+
+        this.socket.onmessage = event => {
+            const {data} = event;
+
+            if (!data) return;
+
+            let obj;
+            try {
+                obj = JSON.parse(event.data)
+            }
+            catch (err) {
+                console.log(`Ошибка JSON.parse(event.data) = ${err}`);
+                return;
+            }
+
+            if (obj.type === 'initMsg') {
+                this.setState({
+                    ...this.state,
+                    userName: obj.userName,
+                    password: obj.password,
+                    isAdmin: obj.isAdmin,
+                    isBanned: obj.isBanned,
+                    isMuted: obj.isMuted,
+                    color: obj.color,
+                });
+                return;
+            }
+
+            const array = this.state.history;
+            array.push(obj);
+
+            this.setState({
+                ...this.state,
+                history: [...array.slice(-this.props.historyLength)]
+            });
         };
 
         this.socket.onclose = (event) => {
@@ -43,10 +101,6 @@ class ChatView extends Component {
             console.log(`Код: ${event.code} причина: ${event.reason}`);
         };
 
-        this.socket.onmessage = (event) => {
-            this.parseHistory(event);
-        };
-
         this.socket.onerror = (error) => {
             console.log("Ошибка " + error.message);
         };
@@ -54,41 +108,13 @@ class ChatView extends Component {
 
     componentWillUnmount() {
         // todo Закрыть соединение
-        console.log('Закрыть соединение');
-    };
-
-    parseHistory = (event) => {
-        if (!event.data) return;
-
-        // timeStamp, userName, isAdmin, isBanned, isMuted, color, message
-        // От сервера: timeStamp, userName, message
-
-        let data;
-        try {
-            data = JSON.parse(event.data);
-        }
-        catch (err) {
-            console.log(`Ошибка JSON.parse(event.data) = ${err}`);
-            return;
-        }
-
         const obj = {
-            timeStamp: data.timeStamp,
-            userName: data.userName,
-            message: data.message,
-            isAdmin: false,
-            isBanned: false,
-            isMuted: false,
-            color: 'green',
+            type: 'userExit',
+            userName: this.state.userName,
         };
+        this.socket.send(JSON.stringify(obj));
 
-        const array = this.state.history;
-        array.push(obj);
-
-        this.setState({
-            ...this.state,
-            history: [...array.slice(-this.props.historyLength)]
-        });
+        console.log('Соединение закрыто.');
     };
 
     handleMessageChange = (e) => {
@@ -102,7 +128,8 @@ class ChatView extends Component {
         e.preventDefault();
 
         // todo Добавить остальные данные, которые отправляются через websocket
-        let obj = {
+        const obj = {
+            type: 'userMsg',
             userName: this.state.userName,
             message: this.state.message
         };
@@ -134,6 +161,8 @@ class ChatView extends Component {
                 </form>
 
                 <Button bsStyle="primary" onClick={handleExitChat}>Exit...</Button>
+
+                {this.state.isAdmin ? "true" : "false"}
             </div>
         );
     };
