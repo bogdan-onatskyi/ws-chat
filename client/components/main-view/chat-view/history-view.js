@@ -18,7 +18,6 @@ const addZero = (num, digit = 2) => {
 
 const HistoryView = ({history}) => {
     const UserMsg = ({type, userName, isAdmin, isBanned, isMuted, color}) => {
-        console.log(` = ${isAdmin}`);
         return type === 'userMsg'
             ? <span>
                 <span className="post post__userName"><strong>{userName}</strong></span>

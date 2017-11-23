@@ -30,8 +30,11 @@ class ChatView extends Component {
 
         message: '',
 
-        history: []
+        history: [],
+
+        canISendAMessage: true
     };
+    timeOut = 1000;
 
     componentDidMount() {
         this.socket = new WebSocket(this.props.serverURL);
@@ -127,14 +130,28 @@ class ChatView extends Component {
     handleSendMessage = (e) => {
         e.preventDefault();
 
-        // todo Добавить остальные данные, которые отправляются через websocket
-        const obj = {
-            type: 'userMsg',
-            userName: this.state.userName,
-            message: this.state.message
-        };
+        if (this.state.canISendAMessage) {
+            if (this.state.message !== '') {
+                const obj = {
+                    type: 'userMsg',
+                    userName: this.state.userName,
+                    message: this.state.message
+                };
+                this.socket.send(JSON.stringify(obj));
 
-        this.socket.send(JSON.stringify(obj));
+
+                this.state.canISendAMessage = false;
+
+                setTimeout(() => {
+                    this.setState({
+                        ...this.state,
+                        canISendAMessage: true
+                    });
+                }, this.timeOut)
+            }
+
+        }
+
     };
 
     render() {
@@ -154,7 +171,8 @@ class ChatView extends Component {
                                          value={this.state.message}
                                          onChange={this.handleMessageChange}/>
                             <InputGroup.Button>
-                                <Button bsStyle="primary" type="submit">Send...</Button>
+                                <Button bsStyle="primary" type="submit"
+                                        disabled={this.state.canISendAMessage}>Send...</Button>
                             </InputGroup.Button>
                         </InputGroup>
                     </FormGroup>
