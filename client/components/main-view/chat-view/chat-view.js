@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 
 import FormGroup from 'react-bootstrap/es/FormGroup';
@@ -6,52 +7,45 @@ import InputGroup from 'react-bootstrap/es/InputGroup';
 import FormControl from 'react-bootstrap/es/FormControl';
 import Button from 'react-bootstrap/es/Button';
 
+import {getDataFromServer, addPostToHistory, setMessage} from '../../../actions/chat-actions';
+import {setIsLoggedIn} from '../../../actions/user-actions';
+
 import HistoryView from './history-view';
 
 import './chat-view.scss';
 
 class ChatView extends Component {
     static PropTypes = {
-        historyLength: PropTypes.number.isRequired,
         serverURL: PropTypes.string.isRequired,
-        userName: PropTypes.string.isRequired,
-        password: PropTypes.string.isRequired,
-        handleExitChat: PropTypes.func.isRequired,
+
+        user: PropTypes.object.isRequired,
+        history: PropTypes.array.isRequired,
+        message: PropTypes.string.isRequired,
+
+        getDataFromServer: PropTypes.func.isRequired,
+        addPostToHistory: PropTypes.func.isRequired,
+        setMessage: PropTypes.func.isRequired,
+
+        setIsLoggedIn: PropTypes.func.isRequired,
     };
 
     state = {
-        userId: null,
-        userName: this.props.userName,
-        password: this.props.password,
-        isAdmin: false,
-        isBanned: false,
-        isMuted: false,
-        color: 'green',
-
-        message: '',
-
-        history: [],
-
-        canISendAMessage: true
+        canISendMessage: true
     };
+
     timeOut = 1000;
 
     componentDidMount() {
+        const {user, addPostToHistory} = this.props;
+        const {userName, password} = user;
+
         this.socket = new WebSocket(this.props.serverURL);
 
         this.socket.onopen = event => {
-            console.log('Соединение установлено.');
-            // this.parseHistory(event);
-
             const obj = {
                 type: 'initMsg',
-                // userId: this.state.userId,
-                userName: this.state.userName,
-                password: this.state.password,
-                // isAdmin: this.state.isAdmin,
-                // isBanned: this.state.isBanned,
-                // isMuted: this.state.isMuted,
-                // color: this.state.color,
+                userName,
+                password,
             };
 
             this.socket.send(JSON.stringify(obj));
@@ -68,7 +62,7 @@ class ChatView extends Component {
 
             let obj;
             try {
-                obj = JSON.parse(event.data)
+                obj = JSON.parse(data);
             }
             catch (err) {
                 console.log(`Ошибка JSON.parse(event.data) = ${err}`);
@@ -76,32 +70,18 @@ class ChatView extends Component {
             }
 
             if (obj.type === 'initMsg') {
-                this.setState({
-                    ...this.state,
-                    userName: obj.userName,
-                    password: obj.password,
-                    isAdmin: obj.isAdmin,
-                    isBanned: obj.isBanned,
-                    isMuted: obj.isMuted,
-                    color: obj.color,
-                });
+                getDataFromServer(obj.data);
                 return;
             }
 
-            const array = this.state.history;
-            array.push(obj);
-
-            this.setState({
-                ...this.state,
-                history: [...array.slice(-this.props.historyLength)]
-            });
+            addPostToHistory(obj);
         };
 
         this.socket.onclose = (event) => {
             event.wasClean
                 ? console.log('Соединение закрыто чисто.')
                 : console.log('Обрыв соединения');
-            console.log(`Код: ${event.code} причина: ${event.reason}`);
+            console.log(`Код: ${event.code}`);
         };
 
         this.socket.onerror = (error) => {
@@ -121,69 +101,86 @@ class ChatView extends Component {
     };
 
     handleMessageChange = (e) => {
-        this.setState({
-            ...this.state,
-            message: e.target.value
-        });
+        setMessage(e.target.value);
     };
 
     handleSendMessage = (e) => {
         e.preventDefault();
 
-        if (this.state.canISendAMessage) {
-            if (this.state.message !== '') {
+        const {user, message} = this.props;
+        const {userName} = user;
+
+        if (this.state.canISendMessage) {
+            if (message !== '') {
                 const obj = {
                     type: 'userMsg',
-                    userName: this.state.userName,
-                    message: this.state.message
+                    userName,
+                    message
                 };
                 this.socket.send(JSON.stringify(obj));
 
-
-                this.state.canISendAMessage = false;
+                this.setState(state => {
+                    state.canISendMessage = false;
+                });
 
                 setTimeout(() => {
-                    this.setState({
-                        ...this.state,
-                        canISendAMessage: true
+                    this.setState(state => {
+                        state.canISendMessage = true;
                     });
-                }, this.timeOut)
+                }, this.timeOut);
             }
-
         }
+    };
 
+    handleExitChat = () => {
+        setIsLoggedIn(false);
     };
 
     render() {
-        const {serverURL, handleExitChat} = this.props;
+        const {serverURL, message, history} = this.props;
 
         return (
             <div className="chat">
-
                 <p className="chat__addr">{serverURL}</p>
 
                 <form name="chatForm" onSubmit={this.handleSendMessage}>
-                    <HistoryView history={this.state.history}/>
+                    <HistoryView history={history}/>
 
                     <FormGroup>
                         <InputGroup>
                             <FormControl type="text" name="message"
-                                         value={this.state.message}
+                                         value={message}
                                          onChange={this.handleMessageChange}/>
                             <InputGroup.Button>
                                 <Button bsStyle="primary" type="submit"
-                                        disabled={this.state.canISendAMessage}>Send...</Button>
+                                        disabled={this.state.canISendMessage}>Send...</Button>
                             </InputGroup.Button>
                         </InputGroup>
                     </FormGroup>
                 </form>
 
-                <Button bsStyle="primary" onClick={handleExitChat}>Exit...</Button>
-
-                {this.state.isAdmin ? "true" : "false"}
+                <Button bsStyle="primary" onClick={this.handleExitChat}>Exit...</Button>
             </div>
         );
     };
 }
 
-export default ChatView;
+function mapStateToProps(state) {
+    return {
+        user: state.user.user,
+        history: state.chat.history,
+        message: state.chat.message,
+    };
+}
+
+function mapDispatchToProps(dispatch) {
+    return {
+        getDataFromServer: data => dispatch(getDataFromServer(data)),
+        addPostToHistory: data => dispatch(addPostToHistory(data)),
+        setMessage: data => dispatch(setMessage(data)),
+
+        setIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
+    };
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(ChatView);

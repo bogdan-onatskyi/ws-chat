@@ -1,17 +1,20 @@
 import React from 'react';
+import {Provider} from 'react-redux';
 
-// import Header from '../header/header';
+import configureStore from '../../store/configure-store';
+
 import MainView from '../main-view/main-view';
-// import Footer from '../footer/footer';
 
 import './app.scss';
 
+const store = configureStore();
+
 const Index = () => (
-    <div className="app">
-        {/*<Header text="Chat application"/>*/}
-        <MainView/>
-        {/*<Footer/>*/}
-    </div>
+    <Provider store={store}>
+        <main className="app">
+            <MainView/>
+        </main>
+    </Provider>
 );
 
 export default Index;

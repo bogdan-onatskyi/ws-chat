@@ -128,9 +128,8 @@ app.post('/login', function (req, res) {
                 switch (obj.type) {
                     case 'initMsg':
                         const user = users.find(u => u.userName === obj.userName);
-                        user.type = 'initMsg';
 
-                        ws.send(JSON.stringify(user));
+                        ws.send(JSON.stringify({type: 'initMsg', data: user}));
                         return;
 
                     case 'userMsg':

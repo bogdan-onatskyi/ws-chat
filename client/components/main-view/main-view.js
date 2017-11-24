@@ -1,81 +1,104 @@
 import React, {Component} from 'react';
+import {connect} from 'react-redux';
+import PropTypes from 'prop-types';
 
 import axios from 'axios';
 
-import LoginView from './login-view/login-view';
+import FormGroup from 'react-bootstrap/es/FormGroup';
+import InputGroup from 'react-bootstrap/es/InputGroup';
+import FormControl from 'react-bootstrap/es/FormControl';
+import Button from 'react-bootstrap/es/Button';
+
 import ChatView from './chat-view/chat-view';
+
+import {setIsLoggedIn, setUserName, setPassword} from '../../actions/user-actions'
 
 import './main-view.scss';
 
 class MainView extends Component {
-    state = {
-        userName: 'user',
-        password: 'password',
+    static PropTypes = {
+        user: PropTypes.object.isRequired,
 
-        isLoggedIn: false,
+        setIsLoggedIn: PropTypes.func.isRequired,
+        setUserName: PropTypes.func.isRequired,
+        setPassword: PropTypes.func.isRequired
     };
 
     handleLogin = (e) => {
         e.preventDefault();
 
+        const {user, setIsLoggedIn} = this.props;
+        const {userName, password} = user;
+
         const request = {
-            userName: this.state.userName,
-            password: this.state.password,
+            userName,
+            password,
         };
 
         Promise.resolve(request)
             .then(request => {
-                    return (
-                        // axios.post('http://localhost:8080/login', request, {timeout: 2000})
-                        axios.post('/login', request, {timeout: 2000})
-                            .then(response => {
-                                const {data} = response;
+                return (
+                    axios.post('/login', request, {timeout: 2000})
+                        .then(response => {
+                            const {data} = response;
 
-                                this.setState({
-                                    ...this.state,
-                                    isLoggedIn: data.auth === 'ok'
-                                });
+                            setIsLoggedIn(data.auth === 'ok');
 
-                                return data;
-                            })
-                            .catch(error => {
-                                console.log(error);
-                                return {Auth: 'networkError'};
-                            })
-                    )
-                }
-            )
+                            return data;
+                        })
+                        .catch(error => {
+                            console.log(error);
+                            return {
+                                Auth: 'networkError'
+                            };
+                        })
+                );
+            });
     };
 
-    handleChange = (e) => {
-        this.setState({
-            ...this.state,
-            [e.target.name]: e.target.value
-        });
+    handleChangeUserName = (e) => {
+        this.props.setUserName(e.target.value);
     };
 
-    handleExitChat = () => {
-        this.setState({
-            ...this.state,
-            isLoggedIn: false
-        });
+    handleChangePassword = (e) => {
+        this.props.setPassword(e.target.value);
     };
 
-    render() {
+    renderLoginForm = () => {
+        const {userName, password} = this.props.user;
+
         return (
-            <main className="main">
-                {this.state.isLoggedIn
-                    ? <ChatView historyLength={20} serverURL="ws://localhost:8080"
-                                userName={this.state.userName}
-                                password={this.state.password}
-                                handleExitChat={this.handleExitChat}/>
-
-                    : <LoginView userName={this.state.userName} password={this.state.password}
-                                 handleLogin={this.handleLogin} handleChange={this.handleChange}/>
-                }
-            </main>
+            <form className="main__loginForm" name="loginForm" onSubmit={this.handleLogin}>
+                <FormGroup>
+                    <InputGroup>
+                        <FormControl type="text" name="userName" value={userName}
+                                     onChange={this.handleChangeUserName}/>
+                        <FormControl type="text" name="password" value={password}
+                                     onChange={this.handleChangePassword}/>
+                        <Button bsStyle="primary" type="submit">Login</Button>
+                    </InputGroup>
+                </FormGroup>
+            </form>
         );
+    };
+
+    render = () => this.props.user.isLoggedIn
+        ? <ChatView serverURL="ws://localhost:8080"/>
+        : this.renderLoginForm();
+}
+
+function mapStateToProps(state) {
+    return {
+        user: state.user.user
     };
 }
 
-export default MainView;
+function mapDispatchToProps(dispatch) {
+    return {
+        setIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
+        setUserName: userName => dispatch(setUserName(userName)),
+        setPassword: password => dispatch(setPassword(password)),
+    };
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(MainView);
