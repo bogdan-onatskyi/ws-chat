@@ -7,7 +7,11 @@ import InputGroup from 'react-bootstrap/es/InputGroup';
 import FormControl from 'react-bootstrap/es/FormControl';
 import Button from 'react-bootstrap/es/Button';
 
-import {getDataFromServer, addPostToHistory, setMessage} from '../../../actions/chat-actions';
+import {
+    getDataFromServer, addPostToHistory, clearHistory,
+    setMessage, setCanISendMessage, setSendMessageCountdown
+} from '../../../actions/chat-actions';
+
 import {setIsLoggedIn} from '../../../actions/user-actions';
 
 import HistoryView from './history-view';
@@ -22,21 +26,19 @@ class ChatView extends Component {
         history: PropTypes.array.isRequired,
         message: PropTypes.string.isRequired,
 
-        getDataFromServer: PropTypes.func.isRequired,
-        addPostToHistory: PropTypes.func.isRequired,
-        setMessage: PropTypes.func.isRequired,
+        handleGetDataFromServer: PropTypes.func.isRequired,
+        handleAddPostToHistory: PropTypes.func.isRequired,
+        handleClearHistory: PropTypes.func.isRequired,
+        handleSetMessage: PropTypes.func.isRequired,
+        handleSetCanISendMessage: PropTypes.func.isRequired,
 
-        setIsLoggedIn: PropTypes.func.isRequired,
+        handleSetIsLoggedIn: PropTypes.func.isRequired,
     };
 
-    state = {
-        canISendMessage: true
-    };
-
-    timeOut = 1000;
+    timeOut = 10000;
 
     componentDidMount() {
-        const {user, addPostToHistory} = this.props;
+        const {user, handleGetDataFromServer, handleAddPostToHistory} = this.props;
         const {userName, password} = user;
 
         this.socket = new WebSocket(this.props.serverURL);
@@ -70,11 +72,11 @@ class ChatView extends Component {
             }
 
             if (obj.type === 'initMsg') {
-                getDataFromServer(obj.data);
+                handleGetDataFromServer(obj.data);
                 return;
             }
 
-            addPostToHistory(obj);
+            handleAddPostToHistory(obj);
         };
 
         this.socket.onclose = (event) => {
@@ -93,67 +95,87 @@ class ChatView extends Component {
         // todo Закрыть соединение
         const obj = {
             type: 'userExit',
-            userName: this.state.userName,
+            userName: this.props.user.userName,
         };
         this.socket.send(JSON.stringify(obj));
+
+        this.props.handleClearHistory();
 
         console.log('Соединение закрыто.');
     };
 
     handleMessageChange = (e) => {
-        setMessage(e.target.value);
+        // todo setCanISendMessage
+        this.props.handleSetCanISendMessage(e.target.value !== '' && e.target.value.length < 200);
+        this.props.handleSetMessage(e.target.value);
     };
 
     handleSendMessage = (e) => {
         e.preventDefault();
 
-        const {user, message} = this.props;
+        const {
+            user, message, canISendMessage, handleSetCanISendMessage,
+            handleSetSendMessageCountdown
+        } = this.props;
         const {userName} = user;
 
-        if (this.state.canISendMessage) {
+        if (canISendMessage) {
             if (message !== '') {
+                handleSetCanISendMessage(false);
+
                 const obj = {
                     type: 'userMsg',
                     userName,
                     message
                 };
+
                 this.socket.send(JSON.stringify(obj));
 
-                this.setState(state => {
-                    state.canISendMessage = false;
-                });
+                let timeOut = this.timeOut;
+                handleSetSendMessageCountdown(timeOut); // todo Почему пауза в 1 секунду и не отрисовывает значение 10?
 
-                setTimeout(() => {
-                    this.setState(state => {
-                        state.canISendMessage = true;
-                    });
-                }, this.timeOut);
+                const timerId = setInterval(() => {
+                    timeOut -= 1000;
+                    handleSetSendMessageCountdown(timeOut);
+
+                    if (this.props.sendMessageCountdown <= 0) {
+                        clearInterval(timerId);
+                        handleSetCanISendMessage(true);
+                    }
+                }, 1000);
+
+                handleSetSendMessageCountdown(0);
             }
         }
     };
 
     handleExitChat = () => {
-        setIsLoggedIn(false);
+        this.props.handleSetIsLoggedIn(false);
     };
 
     render() {
-        const {serverURL, message, history} = this.props;
+        const {user, serverURL, message, history, canISendMessage, sendMessageCountdown} = this.props;
+        const sendButtonText = sendMessageCountdown !== 0 ? sendMessageCountdown / 1000 : 'Send...';
 
         return (
             <div className="chat">
                 <p className="chat__addr">{serverURL}</p>
 
                 <form name="chatForm" onSubmit={this.handleSendMessage}>
+
                     <HistoryView history={history}/>
 
                     <FormGroup>
                         <InputGroup>
+                            <InputGroup.Addon>{user.userName}</InputGroup.Addon>
                             <FormControl type="text" name="message"
                                          value={message}
                                          onChange={this.handleMessageChange}/>
                             <InputGroup.Button>
                                 <Button bsStyle="primary" type="submit"
-                                        disabled={this.state.canISendMessage}>Send...</Button>
+                                        disabled={!canISendMessage}>
+                                    {sendButtonText}
+                                </Button>
                             </InputGroup.Button>
                         </InputGroup>
                     </FormGroup>
@@ -167,19 +189,25 @@ class ChatView extends Component {
 
 function mapStateToProps(state) {
     return {
-        user: state.user.user,
+        user: state.user,
         history: state.chat.history,
         message: state.chat.message,
+        canISendMessage: state.chat.canISendMessage,
+        sendMessageCountdown: state.chat.sendMessageCountdown,
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
-        getDataFromServer: data => dispatch(getDataFromServer(data)),
-        addPostToHistory: data => dispatch(addPostToHistory(data)),
-        setMessage: data => dispatch(setMessage(data)),
+        handleGetDataFromServer: data => dispatch(getDataFromServer(data)),
+        handleAddPostToHistory: data => dispatch(addPostToHistory(data)),
+        handleClearHistory: () => dispatch(clearHistory()),
 
-        setIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
+        handleSetMessage: data => dispatch(setMessage(data)),
+        handleSetCanISendMessage: data => dispatch(setCanISendMessage(data)),
+        handleSetSendMessageCountdown: data => dispatch(setSendMessageCountdown(data)),
+
+        handleSetIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
     };
 }
 

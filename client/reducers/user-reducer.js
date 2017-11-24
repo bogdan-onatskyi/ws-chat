@@ -1,19 +1,17 @@
 import * as TYPES from '../actions/types';
 
 const initialState = {
-    user: {
-        userId: null,
+    userId: null,
 
-        userName: 'user',
-        password: 'password',
+    userName: 'user',
+    password: 'password',
 
-        isAdmin: false,
-        isBanned: false,
-        isMuted: false,
-        color: 'black',
+    isAdmin: false,
+    isBanned: false,
+    isMuted: false,
+    color: 'black',
 
-        isLoggedIn: false,
-    }
+    isLoggedIn: false,
 };
 
 export default function (state = initialState, action) {
@@ -27,9 +25,12 @@ export default function (state = initialState, action) {
             };
 
         case TYPES.USER_SET_USERNAME:
+            console.log(`username = ${data}`);
+
             return {
                 ...state,
                 userName: data
+                // user: {userName: data}
             };
 
         case TYPES.USER_SET_PASSWORD:

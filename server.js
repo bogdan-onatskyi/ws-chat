@@ -82,7 +82,8 @@ app.post('/login', function (req, res) {
     console.log(toString('You posted:', reqData));
 
     let resData = {
-        userName: '', password: '', isAdmin: false, isBanned: false, isMuted: false, color: 'green',
+        // userName: '',
+        // password: '', isAdmin: false, isBanned: false, isMuted: false, color: 'green',
         auth: 'denied'
     };
 
@@ -100,7 +101,7 @@ app.post('/login', function (req, res) {
             };
     });
 
-    req.session.userName = resData.userName; // todo auth
+    if (resData.auth === 'ok') req.session.userName = resData.userName; // todo auth
 
     if (resData.auth === 'ok' && !isChatServerRunning) {
         const server = http.createServer(app);
@@ -156,9 +157,16 @@ app.post('/login', function (req, res) {
                         obj.type = 'serverMsg';
                         obj.message = `${obj.userName} left chat...`;
 
-                        loggedUsers.forEach(user => {
-                            if (user.userName === obj.userName) user.ws.terminate();
+                        loggedUsers = loggedUsers.map(user => {
+                            if (user.userName === obj.userName)
+                                user.ws.terminate();
+                            else
+                                return user;
                         });
+
+                        // loggedUsers.forEach(user => {
+                        //     if (user.userName === obj.userName) user.ws.terminate();
+                        // });
                         break;
                 }
 
