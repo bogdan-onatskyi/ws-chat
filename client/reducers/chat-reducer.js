@@ -14,17 +14,16 @@ export default function (state = initialState, action) {
 
     switch (type) {
         case TYPES.CHAT_ADD_POST_TO_HISTORY:
+            console.log(`data = ${data}`);
             return {
                 ...state,
                 history: [...state.history.splice(-historyLength - 1), data],
-                // history: [...state.history.slice(-historyLength - 1), data]
             };
 
         case TYPES.CHAT_CLEAR_HISTORY:
             return {
                 ...state,
                 history: []
-                // history: [...history.splice(0)]
             };
 
         case TYPES.CHAT_SET_MESSAGE:

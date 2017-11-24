@@ -73,15 +73,15 @@ const users = [ // todo Заменить на базу данных
 
 let isChatServerRunning = false;
 const chatHistory = [];
-let loggedUsers = [];
+let loggedUsersArray = [];
 
-app.post('/login', function (req, res) {
-    const reqData = req.body;
+app.post('/login', function (request, response) {
+    const requestData = request.body;
 
     console.log('');
-    console.log(toString('You posted:', reqData));
+    console.log(toString('You posted:', requestData));
 
-    let resData = {
+    let responseData = {
         // userName: '',
         // password: '', isAdmin: false, isBanned: false, isMuted: false, color: 'green',
         auth: 'denied'
@@ -89,8 +89,8 @@ app.post('/login', function (req, res) {
 
     // todo connect to db
     users.forEach(user => {
-        if (reqData.userName === user.userName && reqData.password === user.password)
-            resData = {
+        if (requestData.userName === user.userName && requestData.password === user.password)
+            responseData = {
                 userName: user.userName,
                 password: user.password,
                 isAdmin: user.isAdmin,
@@ -101,9 +101,14 @@ app.post('/login', function (req, res) {
             };
     });
 
-    if (resData.auth === 'ok') req.session.userName = resData.userName; // todo auth
+    if (responseData.auth === 'ok') request.session.userName = responseData.userName; // todo auth
 
-    if (resData.auth === 'ok' && !isChatServerRunning) {
+    response.setHeader('Content-Type', 'application/json');
+    response.send(JSON.stringify(responseData));
+
+    console.log(toString('Server answered:', responseData));
+
+    if (responseData.auth === 'ok' && !isChatServerRunning) {
         const server = http.createServer(app);
         const wss = new WebSocket.Server({server});
 
@@ -117,78 +122,99 @@ app.post('/login', function (req, res) {
             ws.on('message', message => {
                 console.log(`received chat message: ${message}`);
 
-                let obj;
+                let receivedObject = {};
+
                 try {
-                    obj = JSON.parse(message);
-                } catch (err) {
-                    console.log(`JSON.parse error: ${err}`);
+                    receivedObject = JSON.parse(message);
+                } catch (error) {
+                    console.log(`JSON.parse error: ${error}`);
                 }
 
-                obj.timeStamp = (new Date()).getTime();
+                let sentObject = {
+                    timeStamp: (new Date()).getTime(),
+                    userName: receivedObject.userName,
+                };
 
-                switch (obj.type) {
+                switch (receivedObject.type) {
                     case 'initMsg':
-                        const user = users.find(u => u.userName === obj.userName);
+                        const user = users.find(u => u.userName === receivedObject.userName);
 
-                        ws.send(JSON.stringify({type: 'initMsg', data: user}));
+                        sentObject = {
+                            ...sentObject,
+                            flag: '144',
+                            type: 'initMsg',
+                            data: user
+                        };
+                        ws.send(JSON.stringify(sentObject));
+
                         return;
 
                     case 'userMsg':
-                        let isLogged = false;
-                        loggedUsers.forEach(user => {
-                            if (user.userName === obj.userName) {
-                                isLogged = true;
+                        let isUserLogged = false;
+
+                        loggedUsersArray.forEach(user => {
+                            if (user.userName && user.userName === receivedObject.userName) {
+                                isUserLogged = true;
                             }
                         });
 
-                        if (!isLogged || obj.message === null) {
-                            obj.type = 'serverMsg';
-                            obj.message = `${obj.userName} logged in chat...`;
-                            loggedUsers.push({
-                                userName: obj.userName,
+                        if (!isUserLogged || receivedObject.message === null) {
+
+                            sentObject = {
+                                ...sentObject,
+                                flag: '165',
+                                type: 'userEnter',
+                                message: `${receivedObject.userName} logged in chat...`
+                            };
+
+                            loggedUsersArray.push({
+                                userName: receivedObject.userName,
                                 ws
                             });
                         }
+
+                        sentObject.flag = '176';
+                        sentObject.message = receivedObject.message;
+
+                        console.log(`After enter loggedUsersArray.length = ${loggedUsersArray.length}`);
+
                         break;
 
                     case 'userExit':
-                        loggedUsers = loggedUsers.filter(user => user.userName !== obj.userName);
+                        sentObject = {
+                            ...sentObject,
+                            flag: '182',
+                            type: 'userExit',
+                            message: `${receivedObject.userName} left chat...`
+                        };
 
-                        obj.type = 'serverMsg';
-                        obj.message = `${obj.userName} left chat...`;
-
-                        loggedUsers = loggedUsers.map(user => {
-                            if (user.userName === obj.userName)
-                                user.ws.terminate();
-                            else
-                                return user;
+                        loggedUsersArray = loggedUsersArray.map(user => {
+                            if (user.userName === receivedObject.userName) {
+                                // if (user.ws && user.ws.readyState === WebSocket.OPEN) {
+                                if (user.ws) {
+                                    user.ws.send(JSON.stringify(sentObject));
+                                    user.ws.terminate();
+                                }
+                            }
+                            else return user;
                         });
 
-                        // loggedUsers.forEach(user => {
-                        //     if (user.userName === obj.userName) user.ws.terminate();
-                        // });
+                        console.log(`After exit loggedUsersArray.length = ${loggedUsersArray.length}`);
+
                         break;
                 }
 
                 wss.clients.forEach(client => {
                     // if (client !== ws && client.readyState === WebSocket.OPEN) {
                     if (client.readyState === WebSocket.OPEN) {
-                        client.send(JSON.stringify(obj));
-                        console.log(`sent chat message: ${JSON.stringify(obj)}`);
+                        const message = JSON.stringify(sentObject);
+                        client.send(message);
+                        console.log(`sent chat message: ${message}`);
                     }
                 });
             });
-
-            // ws.on('close', message => { // todo Close connection
-            //
-            // });
         });
     }
-
-    res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(resData));
-
-    console.log(toString('Server answered:', resData));
 });
 
 // function loadUserFromDB(req, res, next) {
@@ -208,13 +234,9 @@ app.post('/login', function (req, res) {
 //         res.redirect('/');
 //     }
 // }
-//
-// app.get('/chat', loadUserFromDB, function(req, res) {
-//     console.log('/chat');
-// });
 
-app.all("/", (req, res) => {
-    res.sendFile(path.resolve(PUBLIC_PATH, 'index.html'));
+app.all("/", (request, response) => {
+    response.sendFile(path.resolve(PUBLIC_PATH, 'index.html'));
 });
 
 app.listen(PORT, () => {

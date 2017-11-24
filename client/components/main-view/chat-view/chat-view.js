@@ -35,48 +35,57 @@ class ChatView extends Component {
         handleSetIsLoggedIn: PropTypes.func.isRequired,
     };
 
-    timeOut = 10000;
+    timeOut = 2000;
 
     componentDidMount() {
-        const {user, handleGetDataFromServer, handleAddPostToHistory} = this.props;
+        const {user, handleGetDataFromServer, handleAddPostToHistory, handleClearHistory} = this.props;
         const {userName, password} = user;
 
         this.socket = new WebSocket(this.props.serverURL);
 
         this.socket.onopen = event => {
-            const obj = {
+            const sentObject = {
                 type: 'initMsg',
                 userName,
                 password,
             };
 
-            this.socket.send(JSON.stringify(obj));
+            this.socket.send(JSON.stringify(sentObject));
 
-            obj.type = 'userMsg';
-            obj.message = null;
-            this.socket.send(JSON.stringify(obj));
+            sentObject.type = 'userMsg';
+            sentObject.message = null;
+            this.socket.send(JSON.stringify(sentObject));
         };
 
         this.socket.onmessage = event => {
             const {data} = event;
+            let receivedObject = {};
 
             if (!data) return;
 
-            let obj;
             try {
-                obj = JSON.parse(data);
+                receivedObject = JSON.parse(data);
             }
-            catch (err) {
-                console.log(`Ошибка JSON.parse(event.data) = ${err}`);
+            catch (error) {
+                console.log(`Ошибка JSON.parse(event.data) = ${error}`);
                 return;
             }
 
-            if (obj.type === 'initMsg') {
-                handleGetDataFromServer(obj.data);
+            console.log(`74 receivedObject.userName = ${receivedObject.userName}`);
+
+            if (receivedObject.type === 'initMsg') {
+                handleGetDataFromServer(receivedObject.data);
                 return;
             }
 
-            handleAddPostToHistory(obj);
+            if (receivedObject.type === 'userExit') {
+                if (receivedObject.userName === userName) {
+                    handleClearHistory();
+                    return;
+                }
+            }
+
+            handleAddPostToHistory(receivedObject);
         };
 
         this.socket.onclose = (event) => {
@@ -92,20 +101,17 @@ class ChatView extends Component {
     };
 
     componentWillUnmount() {
-        // todo Закрыть соединение
-        const obj = {
+        const sentObject = {
             type: 'userExit',
             userName: this.props.user.userName,
         };
-        this.socket.send(JSON.stringify(obj));
 
-        this.props.handleClearHistory();
+        this.socket.send(JSON.stringify(sentObject));
 
         console.log('Соединение закрыто.');
     };
 
     handleMessageChange = (e) => {
-        // todo setCanISendMessage
         this.props.handleSetCanISendMessage(e.target.value !== '' && e.target.value.length < 200);
         this.props.handleSetMessage(e.target.value);
     };
@@ -113,23 +119,20 @@ class ChatView extends Component {
     handleSendMessage = (e) => {
         e.preventDefault();
 
-        const {
-            user, message, canISendMessage, handleSetCanISendMessage,
-            handleSetSendMessageCountdown
-        } = this.props;
+        const {user, message, canISendMessage, handleSetCanISendMessage, handleSetSendMessageCountdown} = this.props;
         const {userName} = user;
 
         if (canISendMessage) {
             if (message !== '') {
                 handleSetCanISendMessage(false);
 
-                const obj = {
+                const sentObject = {
                     type: 'userMsg',
                     userName,
                     message
                 };
 
-                this.socket.send(JSON.stringify(obj));
+                this.socket.send(JSON.stringify(sentObject));
 
                 let timeOut = this.timeOut;
                 handleSetSendMessageCountdown(timeOut); // todo Почему пауза в 1 секунду и не отрисовывает значение 10?
