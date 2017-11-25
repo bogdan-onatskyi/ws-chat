@@ -4,9 +4,9 @@
   "description": "ws-chat",
   "main": "index.js",
   "scripts": {
-    "start-dev-server": "cross-env NODE_ENV=development node ./server.js",
+    "start-dev-server": "cross-env NODE_ENV=development node ./server/server.js",
     "build-prod": "cross-env NODE_ENV=production webpack --progress --config webpack.prod.js",
-    "start-server": "nodemon ./server.js"
+    "start-server": "nodemon ./server/server.js"
   },
   "keywords": [],
   "author": {

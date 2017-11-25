@@ -2,23 +2,23 @@ const path = require("path");
 const express = require('express');
 const app = express();
 
-const http = require('http');
-const url = require('url');
-const WebSocket = require('ws');
+// const http = require('http');
+// const url = require('url');
+// const WebSocket = require('ws');
 
 const session = require('express-session');
 const bodyParser = require('body-parser');
 
 // const setupConnection = require('./db/setup-connection');
 
-const {toString} = require('./utils/utils');
+const {toString} = require('../utils/utils');
 
 const PORT = 3000;
 const PUBLIC_PATH = path.join(__dirname, 'public');
 
 if (process.env.NODE_ENV === 'development') {
     const webpack = require('webpack');
-    const webpackConfig = require('./webpack.dev.js');
+    const webpackConfig = require('../webpack.dev.js');
     const compiler = webpack(webpackConfig);
 
     app.use(require('webpack-dev-middleware')(compiler, {
@@ -71,9 +71,9 @@ const users = [ // todo Заменить на базу данных
     {userName: 'user3', password: 'password3', isAdmin: false, isBanned: false, isMuted: false, color: 'green'},
 ];
 
-let isChatServerRunning = false;
-const chatHistory = [];
-let loggedUsers = [];
+// let isChatServerRunning = false;
+// const chatHistory = [];
+// let loggedUsers = [];
 
 app.post('/login', function (req, res) {
     const reqData = req.body;
@@ -103,78 +103,81 @@ app.post('/login', function (req, res) {
     req.session.userName = resData.userName; // todo auth
 
     if (resData.auth === 'ok' && !isChatServerRunning) {
-        const server = http.createServer(app);
-        const wss = new WebSocket.Server({server});
 
-        server.listen(8080, () => {
-            console.log(`Chat server is listening on ${server.address().port}`);
-            isChatServerRunning = true;
-        });
 
-        wss.on('connection', ws => {
 
-            ws.on('message', message => {
-                console.log(`received chat message: ${message}`);
-
-                let obj;
-                try {
-                    obj = JSON.parse(message);
-                } catch (err) {
-                    console.log(`JSON.parse error: ${err}`);
-                }
-
-                obj.timeStamp = (new Date()).getTime();
-
-                switch (obj.type) {
-                    case 'initMsg':
-                        const user = users.find(u => u.userName === obj.userName);
-
-                        ws.send(JSON.stringify({type: 'initMsg', data: user}));
-                        return;
-
-                    case 'userMsg':
-                        let isLogged = false;
-                        loggedUsers.forEach(user => {
-                            if (user.userName === obj.userName) {
-                                isLogged = true;
-                            }
-                        });
-
-                        if (!isLogged || obj.message === null) {
-                            obj.type = 'serverMsg';
-                            obj.message = `${obj.userName} logged in chat...`;
-                            loggedUsers.push({
-                                userName: obj.userName,
-                                ws
-                            });
-                        }
-                        break;
-
-                    case 'userExit':
-                        loggedUsers = loggedUsers.filter(user => user.userName !== obj.userName);
-
-                        obj.type = 'serverMsg';
-                        obj.message = `${obj.userName} left chat...`;
-
-                        loggedUsers.forEach(user => {
-                            if (user.userName === obj.userName) user.ws.terminate();
-                        });
-                        break;
-                }
-
-                wss.clients.forEach(client => {
-                    // if (client !== ws && client.readyState === WebSocket.OPEN) {
-                    if (client.readyState === WebSocket.OPEN) {
-                        client.send(JSON.stringify(obj));
-                        console.log(`sent chat message: ${JSON.stringify(obj)}`);
-                    }
-                });
-            });
-
-            // ws.on('close', message => { // todo Close connection
-            //
-            // });
-        });
+        // const server = http.createServer(app);
+        // const wss = new WebSocket.Server({server});
+        //
+        // server.listen(8080, () => {
+        //     console.log(`Chat server is listening on ${server.address().port}`);
+        //     isChatServerRunning = true;
+        // });
+        //
+        // wss.on('connection', ws => {
+        //
+        //     ws.on('message', message => {
+        //         console.log(`received chat message: ${message}`);
+        //
+        //         let obj;
+        //         try {
+        //             obj = JSON.parse(message);
+        //         } catch (err) {
+        //             console.log(`JSON.parse error: ${err}`);
+        //         }
+        //
+        //         obj.timeStamp = (new Date()).getTime();
+        //
+        //         switch (obj.type) {
+        //             case 'initMsg':
+        //                 const user = users.find(u => u.userName === obj.userName);
+        //
+        //                 ws.send(JSON.stringify({type: 'initMsg', data: user}));
+        //                 return;
+        //
+        //             case 'userMsg':
+        //                 let isLogged = false;
+        //                 loggedUsers.forEach(user => {
+        //                     if (user.userName === obj.userName) {
+        //                         isLogged = true;
+        //                     }
+        //                 });
+        //
+        //                 if (!isLogged || obj.message === null) {
+        //                     obj.type = 'serverMsg';
+        //                     obj.message = `${obj.userName} logged in chat...`;
+        //                     loggedUsers.push({
+        //                         userName: obj.userName,
+        //                         ws
+        //                     });
+        //                 }
+        //                 break;
+        //
+        //             case 'userExit':
+        //                 loggedUsers = loggedUsers.filter(user => user.userName !== obj.userName);
+        //
+        //                 obj.type = 'serverMsg';
+        //                 obj.message = `${obj.userName} left chat...`;
+        //
+        //                 loggedUsers.forEach(user => {
+        //                     if (user.userName === obj.userName) user.ws.terminate();
+        //                 });
+        //                 break;
+        //         }
+        //
+        //         wss.clients.forEach(client => {
+        //             // if (client !== ws && client.readyState === WebSocket.OPEN) {
+        //             if (client.readyState === WebSocket.OPEN) {
+        //                 client.send(JSON.stringify(obj));
+        //                 console.log(`sent chat message: ${JSON.stringify(obj)}`);
+        //             }
+        //         });
+        //     });
+        //
+        //     // ws.on('close', message => { // todo Close connection
+        //     //
+        //     // });
+        // });
     }
 
     res.setHeader('Content-Type', 'application/json');
