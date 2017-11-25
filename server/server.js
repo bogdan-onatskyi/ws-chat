@@ -73,23 +73,24 @@ const users = [ // todo Заменить на базу данных
 
 // let isChatServerRunning = false;
 // const chatHistory = [];
-// let loggedUsers = [];
+// let loggedUsersArray = [];
 
-app.post('/login', function (req, res) {
-    const reqData = req.body;
+app.post('/login', function (request, response) {
+    const requestData = request.body;
 
     console.log('');
-    console.log(toString('You posted:', reqData));
+    console.log(toString('You posted:', requestData));
 
-    let resData = {
-        userName: '', password: '', isAdmin: false, isBanned: false, isMuted: false, color: 'green',
+    let responseData = {
+        // userName: '',
+        // password: '', isAdmin: false, isBanned: false, isMuted: false, color: 'green',
         auth: 'denied'
     };
 
     // todo connect to db
     users.forEach(user => {
-        if (reqData.userName === user.userName && reqData.password === user.password)
-            resData = {
+        if (requestData.userName === user.userName && requestData.password === user.password)
+            responseData = {
                 userName: user.userName,
                 password: user.password,
                 isAdmin: user.isAdmin,
@@ -100,90 +101,16 @@ app.post('/login', function (req, res) {
             };
     });
 
-    req.session.userName = resData.userName; // todo auth
+    if (responseData.auth === 'ok') request.session.userName = responseData.userName; // todo auth
 
-    if (resData.auth === 'ok' && !isChatServerRunning) {
+    response.setHeader('Content-Type', 'application/json');
+    response.send(JSON.stringify(responseData));
 
+    console.log(toString('Server answered:', responseData));
 
+    if (responseData.auth === 'ok' && !isChatServerRunning) {
 
-        // const server = http.createServer(app);
-        // const wss = new WebSocket.Server({server});
-        //
-        // server.listen(8080, () => {
-        //     console.log(`Chat server is listening on ${server.address().port}`);
-        //     isChatServerRunning = true;
-        // });
-        //
-        // wss.on('connection', ws => {
-        //
-        //     ws.on('message', message => {
-        //         console.log(`received chat message: ${message}`);
-        //
-        //         let obj;
-        //         try {
-        //             obj = JSON.parse(message);
-        //         } catch (err) {
-        //             console.log(`JSON.parse error: ${err}`);
-        //         }
-        //
-        //         obj.timeStamp = (new Date()).getTime();
-        //
-        //         switch (obj.type) {
-        //             case 'initMsg':
-        //                 const user = users.find(u => u.userName === obj.userName);
-        //
-        //                 ws.send(JSON.stringify({type: 'initMsg', data: user}));
-        //                 return;
-        //
-        //             case 'userMsg':
-        //                 let isLogged = false;
-        //                 loggedUsers.forEach(user => {
-        //                     if (user.userName === obj.userName) {
-        //                         isLogged = true;
-        //                     }
-        //                 });
-        //
-        //                 if (!isLogged || obj.message === null) {
-        //                     obj.type = 'serverMsg';
-        //                     obj.message = `${obj.userName} logged in chat...`;
-        //                     loggedUsers.push({
-        //                         userName: obj.userName,
-        //                         ws
-        //                     });
-        //                 }
-        //                 break;
-        //
-        //             case 'userExit':
-        //                 loggedUsers = loggedUsers.filter(user => user.userName !== obj.userName);
-        //
-        //                 obj.type = 'serverMsg';
-        //                 obj.message = `${obj.userName} left chat...`;
-        //
-        //                 loggedUsers.forEach(user => {
-        //                     if (user.userName === obj.userName) user.ws.terminate();
-        //                 });
-        //                 break;
-        //         }
-        //
-        //         wss.clients.forEach(client => {
-        //             // if (client !== ws && client.readyState === WebSocket.OPEN) {
-        //             if (client.readyState === WebSocket.OPEN) {
-        //                 client.send(JSON.stringify(obj));
-        //                 console.log(`sent chat message: ${JSON.stringify(obj)}`);
-        //             }
-        //         });
-        //     });
-        //
-        //     // ws.on('close', message => { // todo Close connection
-        //     //
-        //     // });
-        // });
     }
-
-    res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(resData));
-
-    console.log(toString('Server answered:', resData));
 });
 
 // function loadUserFromDB(req, res, next) {
@@ -208,8 +135,8 @@ app.post('/login', function (req, res) {
 //     console.log('/chat');
 // });
 
-app.all("/", (req, res) => {
-    res.sendFile(path.resolve(PUBLIC_PATH, 'index.html'));
+app.all("/", (request, response) => {
+    response.sendFile(path.resolve(PUBLIC_PATH, 'index.html'));
 });
 
 app.listen(PORT, () => {

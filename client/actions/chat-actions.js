@@ -14,9 +14,29 @@ export function addPostToHistory(data) {
     };
 }
 
+export function clearHistory() {
+    return {
+        type: TYPES.CHAT_CLEAR_HISTORY,
+    };
+}
+
 export function setMessage(data) {
     return {
         type: TYPES.CHAT_SET_MESSAGE,
+        data
+    };
+}
+
+export function setCanISendMessage(data) {
+    return {
+        type: TYPES.CHAT_SET_CAN_I_SEND_MESSAGE,
+        data
+    };
+}
+
+export function setSendMessageCountdown(data) {
+    return {
+        type: TYPES.CHAT_SET_SEND_MESSAGE_COUNTDOWN,
         data
     };
 }
