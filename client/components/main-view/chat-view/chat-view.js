@@ -13,7 +13,7 @@ import {
     setMessage, setCanISendMessage, setSendMessageCountdown
 } from '../../../actions/chat-actions';
 import {setUsersList, clearUsersList} from '../../../actions/users-list-actions';
-import {setIsLoggedIn} from '../../../actions/user-actions';
+import {setIsLoggedIn, setIsMuted, setIsBanned} from '../../../actions/user-actions';
 
 import HistoryView from './history-view';
 import UsersListView from './users-list-view';
@@ -30,6 +30,8 @@ class ChatView extends Component {
         canISendMessage: PropTypes.bool.isRequired,
         sendMessageCountdown: PropTypes.number.isRequired,
 
+        usersList: PropTypes.array.isRequired,
+
         getDataFromServer: PropTypes.func.isRequired,
         addPostToHistory: PropTypes.func.isRequired,
         clearHistory: PropTypes.func.isRequired,
@@ -38,6 +40,8 @@ class ChatView extends Component {
         setSendMessageCountdown: PropTypes.func.isRequired,
 
         setIsLoggedIn: PropTypes.func.isRequired,
+        setIsMuted: PropTypes.func.isRequired,
+        setIsBanned: PropTypes.func.isRequired,
     };
 
     timeOut = 5000;
@@ -113,10 +117,24 @@ class ChatView extends Component {
                     getUsersList();
                     break;
 
-                case 'responseIsMuted':
-                    console.log(` 117 `);
+                case 'responseSetIsMuted':
+                    addPostToHistory(receivedObject);
                     getUsersList();
-                    break;
+
+                    const {user, usersList, setIsMuted, setMessage} = this.props;
+
+                    usersList.forEach(u => {
+                        if (u.userName === user.userName) {
+                            setIsMuted(u.isMuted);
+                            setMessage('');
+                        }
+                    });
+                    return;
+
+                case 'responseSetIsBanned':
+                    addPostToHistory(receivedObject);
+                    getUsersList();
+                    return;
 
                 default:
                     return;
@@ -160,14 +178,14 @@ class ChatView extends Component {
         this.socket.send(JSON.stringify(requestObject));
     };
 
-    handleIsBaned = (userName, isMuted) => {
-        // const requestObject = {
-        //     type: 'setIsMuted',
-        //     userName,
-        //     isMuted
-        // };
-        //
-        // this.socket.send(JSON.stringify(requestObject));
+    handleIsBanned = (userName, isBanned) => {
+        const requestObject = {
+            type: 'setIsBanned',
+            userName,
+            isBanned
+        };
+
+        this.socket.send(JSON.stringify(requestObject));
     };
 
     handleSendMessage = (e) => {
@@ -208,6 +226,8 @@ class ChatView extends Component {
     };
 
     handleMessageChange = (e) => {
+        if (this.props.user.isMuted) return;
+
         const {setMessage, canISendMessage} = this.props;
 
         if (canISendMessage) {
@@ -216,6 +236,8 @@ class ChatView extends Component {
     };
 
     messagePlaceholder = () => {
+        if (this.props.user.isMuted) return 'You are muted by Admin...';
+
         const countdown = this.props.sendMessageCountdown / 1000;
 
         return countdown
@@ -265,7 +287,7 @@ class ChatView extends Component {
 
         return <UsersListView isAdmin={isAdmin}
                               setIsMuted={this.handleIsMuted}
-                              setIsBaned={this.handleIsBaned}/>;
+                              setIsBanned={this.handleIsBanned}/>;
     };
 
     render = () => (
@@ -283,6 +305,8 @@ function mapStateToProps(state) {
         message: state.chat.message,
         canISendMessage: state.chat.canISendMessage,
         sendMessageCountdown: state.chat.sendMessageCountdown,
+
+        usersList: state.usersList.usersList,
     };
 }
 
@@ -299,6 +323,8 @@ function mapDispatchToProps(dispatch) {
         clearUsersList: data => dispatch(clearUsersList(data)),
 
         setIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
+        setIsMuted: bool => dispatch(setIsMuted(bool)),
+        setIsBanned: bool => dispatch(setIsBanned(bool)),
     };
 }
 

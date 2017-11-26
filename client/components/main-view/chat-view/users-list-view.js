@@ -14,7 +14,7 @@ class UsersListView extends Component {
         usersList: PropTypes.array.isRequired,
 
         setIsMuted: PropTypes.func.isRequired,
-        setIsBaned: PropTypes.func.isRequired,
+        setI: PropTypes.func.isRequired,
     };
 
     handleIsMuted = (index) => {
@@ -28,14 +28,14 @@ class UsersListView extends Component {
         }
     };
 
-    handleIsBaned = (index) => {
+    handleIsBanned = (index) => {
         if (this.props.isAdmin) {
-            const {usersList, setIsMuted} = this.props;
-            const {userName, isBaned} = usersList[index];
+            const {usersList, setIsBanned} = this.props;
+            const {userName, isBanned} = usersList[index];
 
-            setIsMuted(userName, isBaned);
+            setIsBanned(userName, !isBanned);
 
-            console.log(`isBaned = ${usersList[index].isBaned}, index = ${index}`);
+            console.log(`isBanned = ${usersList[index].isBanned}, index = ${index}`);
         }
     };
 
@@ -61,7 +61,7 @@ class UsersListView extends Component {
 
                                 {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
                                                        glyph={isBanned ? "remove" : "ok"}
-                                                       onClick={this.handleIsBaned.bind(this, index)}/>}
+                                                       onClick={this.handleIsBanned.bind(this, index)}/>}
 
                                 {userName}
                             </div>

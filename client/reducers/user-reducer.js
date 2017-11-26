@@ -36,6 +36,18 @@ export default function (state = initialState, action) {
                 password: data
             };
 
+        case TYPES.USER_SET_IS_MUTED:
+            return {
+                ...state,
+                isMuted: data
+            };
+
+        case TYPES.USER_SET_IS_BANNED:
+            return {
+                ...state,
+                isBanned: data
+            };
+
         case TYPES.CHAT_GET_DATA_FROM_SERVER:
             return {
                 ...state,

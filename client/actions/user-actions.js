@@ -20,3 +20,17 @@ export function setPassword(data) {
         data
     };
 }
+
+export function setIsMuted(data) {
+    return {
+        type: TYPES.USER_SET_IS_MUTED,
+        data
+    };
+}
+
+export function setIsBanned(data) {
+    return {
+        type: TYPES.USER_SET_IS_BANNED,
+        data
+    };
+}

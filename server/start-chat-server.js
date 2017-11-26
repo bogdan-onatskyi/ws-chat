@@ -22,13 +22,9 @@ module.exports = app => {
     wss.on('connection', ws => {
 
         ws.on('message', message => {
-
             if (process.env.NODE_ENV === 'development') {
                 console.log(`received chat message: ${message}`);
             }
-
-            let user = {};
-            let userName, isAdmin, isBanned, isMuted, color;
 
             let requestObject = {};
             try {
@@ -38,15 +34,21 @@ module.exports = app => {
                 return;
             }
 
-            userName = requestObject.userName;
+            let user = {};
+            const timeStamp = (new Date()).getTime();
+            const userName = requestObject.userName;
 
             let responseObject = {
-                timeStamp: (new Date()).getTime(),
+                timeStamp,
                 userName
             };
 
-            const handleGetUserInfo = () => {
-                user = users.find(u => u.userName === userName);
+            const getUserInfo = () => {
+                user = users.find(user => user.userName === userName);
+                if (user === undefined) {
+                    console.log(`getUserInfo: User ${userName} didn't find.`);
+                    return;
+                }
 
                 responseObject = {
                     ...responseObject,
@@ -57,35 +59,42 @@ module.exports = app => {
                 ws.send(JSON.stringify(responseObject));
             };
 
-            const handleGetUsersList = () => {
+            const getUsersList = () => {
+                const array = loggedUsersArray.map(user => {
+                    const {userName, isAdmin, isBanned, isMuted, color} = user;
+                    return {userName, isAdmin, isBanned, isMuted, color};
+                });
+
+                array.sort((a, b) => {
+                        if (a > b) return 1;
+                        if (a < b) return -1;
+                    });
+
                 responseObject = {
                     ...responseObject,
                     type: 'responseGetUsersList',
-                    data: [...loggedUsersArray.map(user => {
-                        const {userName, isAdmin, isBanned, isMuted, color} = user;
-                        return {userName, isAdmin, isBanned, isMuted, color};
-                    })
-                        .sort((a, b) => {
-                            if (a > b) return 1;
-                            if (a < b) return -1;
-                        })
-                    ]
+                    data: array
                 };
 
-                ws.send(JSON.stringify(responseObject));
+                console.log(`81 = ${array.length} ${array[0].userName}`);
+
+                // ws.send(JSON.stringify(responseObject));
             };
 
-            const handleNewUser = () => {
-                user = users.find(u => u.userName === userName);
-
+            const newUser = () => {
                 responseObject = {
                     ...responseObject,
                     type: 'responseNewUser',
                     message: `Chat message: ${userName} logged in chat...`
                 };
 
+                user = users.find(user => user.userName === userName);
+                if (user === undefined) {
+                    console.log(`newUser: User ${userName} didn't find.`);
+                    return;
+                }
                 loggedUsersArray.push({
-                    userName: user.userName,
+                    userName,
                     isAdmin: user.isAdmin,
                     isBanned: user.isBanned,
                     isMuted: user.isMuted,
@@ -94,7 +103,7 @@ module.exports = app => {
                 });
             };
 
-            const handleNewMessage = () => {
+            const newMessage = () => {
                 responseObject = {
                     ...responseObject,
                     type: 'responseNewMessage',
@@ -102,7 +111,7 @@ module.exports = app => {
                 };
             };
 
-            const handleUserExit = () => {
+            const userExit = () => {
                 responseObject = {
                     ...responseObject,
                     type: 'responseUserExit',
@@ -111,52 +120,77 @@ module.exports = app => {
 
                 loggedUsersArray = loggedUsersArray.filter(user => user.ws !== ws);
 
-                ws.terminate(); // todo Вызывает обрыв соединения
+                ws.terminate();
             };
 
-            const handleSetIsMuted = () => {
+            const setIsMuted = () => {
+                const text = requestObject.isMuted ? 'muted' : 'unmuted';
                 responseObject = {
                     ...responseObject,
                     type: 'responseSetIsMuted',
-                    message: `Chat message: ${userName} is muted...`
+                    message: `Chat message: ${userName} is ${text}...`
                 };
 
                 for (let user of users) {
-                    console.log(`125 requestObject.userName = ${requestObject.userName}`);
-                    if (user.userName === requestObject.userName) {
-                        user = {
-                            ...user,
-                            isMuted: requestObject.isMuted
-                        };
-                        console.log(`131 requestObject.isMuted = ${requestObject.isMuted}`);
+                    if (user.userName === userName) {
+                        user.isMuted = requestObject.isMuted;
+                    }
+                }
+                for (let user of loggedUsersArray) {
+                    if (user.userName === userName) {
+                        user.isMuted = requestObject.isMuted;
                     }
                 }
             };
 
+            const setIsBanned = () => {
+                responseObject = {
+                    ...responseObject,
+                    type: 'responseSetIsBanned',
+                    message: `Chat message: ${userName} is banned...`
+                };
+
+                for (let user of users) {
+                    if (user.userName === userName) {
+                        user.isBanned = requestObject.isBanned;
+                    }
+                }
+                for (let user of users) {
+                    if (user.userName === userName) {
+                        user.isBanned = requestObject.isBanned;
+                    }
+                }
+
+            };
+
             switch (requestObject.type) {
                 case 'getUserInfo':
-                    handleGetUserInfo();
+                    getUserInfo();
                     return;
 
                 case 'getUsersList':
-                    handleGetUsersList();
-                    return;
+                    getUsersList();
+                    break;
 
                 case 'newUser':
-                    handleNewUser();
+                    newUser();
                     break;
 
                 case 'newMessage':
-                    handleNewMessage();
+                    newMessage();
                     break;
 
                 case 'userExit':
-                    handleUserExit();
+                    userExit();
                     break;
 
                 case 'setIsMuted':
-                    console.log(` 156 `);
-                    handleSetIsMuted();
+                    console.log(`172`);
+                    setIsMuted();
+                    break;
+
+                case 'setIsBanned':
+                    setIsBanned();
                     break;
 
                 default:
@@ -177,8 +211,43 @@ module.exports = app => {
                 }
             });
         });
+
         ws.on('close', message => {
+
+            let requestObject = {};
+            try {
+                requestObject = JSON.parse(message);
+            } catch (err) {
+                console.log(`JSON.parse error: ${err}`);
+                return;
+            }
+
+            const timeStamp = (new Date()).getTime();
+            const userName = requestObject.userName;
+
+            const responseObject = {
+                timeStamp,
+                userName,
+                type: 'responseUserExit',
+                message: `Chat message: ${userName} left chat...`
+            };
+
+            loggedUsersArray = loggedUsersArray.filter(user => user.ws !== ws);
+
             ws.terminate();
+
+            wss.clients.forEach(client => {
+                // if (client !== ws && client.readyState === WebSocket.OPEN) {
+                if (client.readyState === WebSocket.OPEN) {
+                    const sendMessage = JSON.stringify(responseObject);
+
+                    client.send(sendMessage);
+
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log(`sent chat message: ${sendMessage}`);
+                    }
+                }
+            });
         });
     });
 };
