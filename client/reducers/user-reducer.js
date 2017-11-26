@@ -25,12 +25,9 @@ export default function (state = initialState, action) {
             };
 
         case TYPES.USER_SET_USERNAME:
-            console.log(`username = ${data}`);
-
             return {
                 ...state,
                 userName: data
-                // user: {userName: data}
             };
 
         case TYPES.USER_SET_PASSWORD:

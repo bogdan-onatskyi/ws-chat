@@ -1,14 +1,15 @@
 @import "../../../entry-point/variables";
 
 .history {
-    min-height: 400px;
+    //min-height: 400px;
+    flex: 1 1 200px;
 }
 
 .post {
     margin: 0 2px;
     &__timeStamp {
         font-size: 10px;
-        //font-size: $font-size__time-stamp;
+        user-select: none;
         color: gray;
     }
     &__isMuted {

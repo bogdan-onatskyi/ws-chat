@@ -1,2 +1,30 @@
 @import "../../../entry-point/variables";
 
+.chat-view {
+    display: flex;
+    flex: 1 1 auto;
+
+    &__chat {
+        flex: 1 1 auto;
+        background-color: lightgray;
+
+        &--exit-button {
+            display: block !important;
+            margin: 0 auto;
+        }
+    }
+    &__users-list {
+        flex: 1 1 auto;
+        background-color: gray;
+        user-select: none;
+        &--user {
+            padding: 0 5px !important;
+            &-editable {
+                cursor: pointer;
+                &:hover {
+                    background-color: lightgray;
+                }
+            }
+        }
+    }
+}

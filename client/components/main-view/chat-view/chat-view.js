@@ -6,15 +6,17 @@ import FormGroup from 'react-bootstrap/es/FormGroup';
 import InputGroup from 'react-bootstrap/es/InputGroup';
 import FormControl from 'react-bootstrap/es/FormControl';
 import Button from 'react-bootstrap/es/Button';
+import Col from "react-bootstrap/es/Col";
 
 import {
     getDataFromServer, addPostToHistory, clearHistory,
     setMessage, setCanISendMessage, setSendMessageCountdown
 } from '../../../actions/chat-actions';
-
+import {setUsersList, clearUsersList} from '../../../actions/users-list-actions';
 import {setIsLoggedIn} from '../../../actions/user-actions';
 
 import HistoryView from './history-view';
+import UsersListView from './users-list-view';
 
 import './chat-view.scss';
 
@@ -25,44 +27,63 @@ class ChatView extends Component {
         user: PropTypes.object.isRequired,
         history: PropTypes.array.isRequired,
         message: PropTypes.string.isRequired,
+        canISendMessage: PropTypes.bool.isRequired,
+        sendMessageCountdown: PropTypes.number.isRequired,
 
-        handleGetDataFromServer: PropTypes.func.isRequired,
-        handleAddPostToHistory: PropTypes.func.isRequired,
-        handleClearHistory: PropTypes.func.isRequired,
-        handleSetMessage: PropTypes.func.isRequired,
-        handleSetCanISendMessage: PropTypes.func.isRequired,
+        getDataFromServer: PropTypes.func.isRequired,
+        addPostToHistory: PropTypes.func.isRequired,
+        clearHistory: PropTypes.func.isRequired,
+        setMessage: PropTypes.func.isRequired,
+        setCanISendMessage: PropTypes.func.isRequired,
+        setSendMessageCountdown: PropTypes.func.isRequired,
 
-        handleSetIsLoggedIn: PropTypes.func.isRequired,
+        setIsLoggedIn: PropTypes.func.isRequired,
     };
 
-    timeOut = 2000;
+    timeOut = 5000;
 
     componentDidMount() {
-        const {user, handleGetDataFromServer, handleAddPostToHistory, handleClearHistory} = this.props;
+        const {
+            serverURL,
+            user, getDataFromServer,
+            addPostToHistory, clearHistory,
+            setUsersList, clearUsersList
+        } = this.props;
         const {userName, password} = user;
 
-        this.socket = new WebSocket(this.props.serverURL);
+        this.socket = new WebSocket(serverURL);
+
+        const getUsersList = () => {
+            const requestObject = {
+                type: 'getUsersList',
+                userName
+            };
+            this.socket.send(JSON.stringify(requestObject));
+        };
 
         this.socket.onopen = event => {
-            const sentObject = {
-                type: 'initMsg',
+            let requestObject = {
+                type: 'getUserInfo',
                 userName,
                 password,
             };
+            this.socket.send(JSON.stringify(requestObject));
 
-            this.socket.send(JSON.stringify(sentObject));
+            requestObject = {
+                type: 'newUser',
+                userName
+            };
+            this.socket.send(JSON.stringify(requestObject));
 
-            sentObject.type = 'userMsg';
-            sentObject.message = null;
-            this.socket.send(JSON.stringify(sentObject));
+            getUsersList();
         };
 
         this.socket.onmessage = event => {
             const {data} = event;
-            let receivedObject = {};
 
             if (!data) return;
 
+            let receivedObject = {};
             try {
                 receivedObject = JSON.parse(data);
             }
@@ -71,123 +92,188 @@ class ChatView extends Component {
                 return;
             }
 
-            console.log(`74 receivedObject.userName = ${receivedObject.userName}`);
-
-            if (receivedObject.type === 'initMsg') {
-                handleGetDataFromServer(receivedObject.data);
-                return;
-            }
-
-            if (receivedObject.type === 'userExit') {
-                if (receivedObject.userName === userName) {
-                    handleClearHistory();
+            switch (receivedObject.type) {
+                case 'responseGetUserInfo':
+                    getDataFromServer(receivedObject.data);
                     return;
-                }
+
+                case 'responseGetUsersList':
+                    setUsersList(receivedObject.data);
+                    return;
+
+                case 'responseNewUser':
+                    addPostToHistory(receivedObject);
+                    getUsersList();
+                    return;
+
+                case 'responseNewMessage':
+                    break;
+
+                case 'responseUserExit':
+                    getUsersList();
+                    break;
+
+                case 'responseIsMuted':
+                    console.log(` 117 `);
+                    getUsersList();
+                    break;
+
+                default:
+                    return;
             }
 
-            handleAddPostToHistory(receivedObject);
+            addPostToHistory(receivedObject);
         };
 
-        this.socket.onclose = (event) => {
+        this.socket.onclose = event => {
+            clearHistory();
+            clearUsersList();
+
             event.wasClean
                 ? console.log('Соединение закрыто чисто.')
                 : console.log('Обрыв соединения');
             console.log(`Код: ${event.code}`);
         };
 
-        this.socket.onerror = (error) => {
-            console.log("Ошибка " + error.message);
+        this.socket.onerror = error => {
+            console.log(`Websocket error ${error.message}`);
         };
     };
 
     componentWillUnmount() {
-        const sentObject = {
+        const requestObject = {
             type: 'userExit',
             userName: this.props.user.userName,
         };
 
-        this.socket.send(JSON.stringify(sentObject));
-
-        console.log('Соединение закрыто.');
+        this.socket.send(JSON.stringify(requestObject));
+        this.socket.close();
     };
 
-    handleMessageChange = (e) => {
-        this.props.handleSetCanISendMessage(e.target.value !== '' && e.target.value.length < 200);
-        this.props.handleSetMessage(e.target.value);
+    handleIsMuted = (userName, isMuted) => {
+        const requestObject = {
+            type: 'setIsMuted',
+            userName,
+            isMuted
+        };
+
+        this.socket.send(JSON.stringify(requestObject));
+    };
+
+    handleIsBaned = (userName, isMuted) => {
+        // const requestObject = {
+        //     type: 'setIsMuted',
+        //     userName,
+        //     isMuted
+        // };
+        //
+        // this.socket.send(JSON.stringify(requestObject));
     };
 
     handleSendMessage = (e) => {
         e.preventDefault();
 
-        const {user, message, canISendMessage, handleSetCanISendMessage, handleSetSendMessageCountdown} = this.props;
+        const {user, message, canISendMessage, setMessage, setCanISendMessage, setSendMessageCountdown} = this.props;
         const {userName} = user;
 
         if (canISendMessage) {
             if (message !== '') {
-                handleSetCanISendMessage(false);
+                setCanISendMessage(false);
 
-                const sentObject = {
-                    type: 'userMsg',
+                const requestObject = {
+                    type: 'newMessage',
                     userName,
                     message
                 };
 
-                this.socket.send(JSON.stringify(sentObject));
+                this.socket.send(JSON.stringify(requestObject));
+                setMessage('');
 
                 let timeOut = this.timeOut;
-                handleSetSendMessageCountdown(timeOut); // todo Почему пауза в 1 секунду и не отрисовывает значение 10?
 
                 const timerId = setInterval(() => {
                     timeOut -= 1000;
-                    handleSetSendMessageCountdown(timeOut);
+                    setSendMessageCountdown(timeOut);
 
                     if (this.props.sendMessageCountdown <= 0) {
                         clearInterval(timerId);
-                        handleSetCanISendMessage(true);
+                        setCanISendMessage(true);
+                        setSendMessageCountdown(0);
                     }
                 }, 1000);
 
-                handleSetSendMessageCountdown(0);
+                setSendMessageCountdown(timeOut);
             }
         }
     };
 
-    handleExitChat = () => {
-        this.props.handleSetIsLoggedIn(false);
+    handleMessageChange = (e) => {
+        const {setMessage, canISendMessage} = this.props;
+
+        if (canISendMessage) {
+            setMessage(e.target.value);
+        }
     };
 
-    render() {
-        const {user, serverURL, message, history, canISendMessage, sendMessageCountdown} = this.props;
-        const sendButtonText = sendMessageCountdown !== 0 ? sendMessageCountdown / 1000 : 'Send...';
+    messagePlaceholder = () => {
+        const countdown = this.props.sendMessageCountdown / 1000;
+
+        return countdown
+            ? `Wait ${countdown} second${countdown === 1 ? '' : 's'} to send a message...`
+            : 'Enter your message here...';
+    };
+
+    handleExitChat = () => {
+        this.props.setIsLoggedIn(false);
+    };
+
+    renderChat = () => {
+        const {user, serverURL, message, history, canISendMessage} = this.props;
 
         return (
-            <div className="chat">
-                <p className="chat__addr">{serverURL}</p>
+            <Col xs={9} className="chat-view__chat">
+                <h4><strong>{serverURL}</strong></h4>
 
                 <form name="chatForm" onSubmit={this.handleSendMessage}>
-
                     <HistoryView history={history}/>
-
                     <FormGroup>
                         <InputGroup>
                             <InputGroup.Addon>{user.userName}</InputGroup.Addon>
-                            <FormControl type="text" name="message"
+                            <FormControl type="text" name="message" autoFocus={true}
                                          value={message}
+                                         placeholder={this.messagePlaceholder()}
                                          onChange={this.handleMessageChange}/>
                             <InputGroup.Button>
-                                <Button bsStyle="primary" type="submit"
-                                        disabled={!canISendMessage}>
-                                    {sendButtonText}
+                                <Button bsStyle="primary" type="submit" autoFocus={false}
+                                        disabled={!canISendMessage || message === ''}>
+                                    Send...
                                 </Button>
                             </InputGroup.Button>
                         </InputGroup>
                     </FormGroup>
                 </form>
-
-                <Button bsStyle="primary" onClick={this.handleExitChat}>Exit...</Button>
-            </div>
+                <div>
+                    <Button className="chat-view__chat--exit-button" bsStyle="primary"
+                            onClick={this.handleExitChat}>Exit chat</Button>
+                </div>
+            </Col>
         );
     };
+
+    renderUsersList = () => {
+        const {isAdmin} = this.props.user;
+
+        return <UsersListView isAdmin={isAdmin}
+                              setIsMuted={this.handleIsMuted}
+                              setIsBaned={this.handleIsBaned}/>;
+    };
+
+    render = () => (
+        <div className="chat-view">
+            {this.renderChat()}
+            {this.renderUsersList()}
+        </div>
+    );
 }
 
 function mapStateToProps(state) {
@@ -202,15 +288,17 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        handleGetDataFromServer: data => dispatch(getDataFromServer(data)),
-        handleAddPostToHistory: data => dispatch(addPostToHistory(data)),
-        handleClearHistory: () => dispatch(clearHistory()),
+        getDataFromServer: data => dispatch(getDataFromServer(data)),
+        addPostToHistory: data => dispatch(addPostToHistory(data)),
+        clearHistory: () => dispatch(clearHistory()),
+        setMessage: data => dispatch(setMessage(data)),
+        setCanISendMessage: data => dispatch(setCanISendMessage(data)),
+        setSendMessageCountdown: data => dispatch(setSendMessageCountdown(data)),
 
-        handleSetMessage: data => dispatch(setMessage(data)),
-        handleSetCanISendMessage: data => dispatch(setCanISendMessage(data)),
-        handleSetSendMessageCountdown: data => dispatch(setSendMessageCountdown(data)),
+        setUsersList: data => dispatch(setUsersList(data)),
+        clearUsersList: data => dispatch(clearUsersList(data)),
 
-        handleSetIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
+        setIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
     };
 }
 

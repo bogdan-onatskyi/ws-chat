@@ -5,7 +5,7 @@ const historyLength = 20;
 const initialState = {
     history: [],
     message: '',
-    canISendMessage: false,
+    canISendMessage: true,
     sendMessageCountdown: 0,
 };
 
@@ -14,7 +14,6 @@ export default function (state = initialState, action) {
 
     switch (type) {
         case TYPES.CHAT_ADD_POST_TO_HISTORY:
-            console.log(`data = ${data}`);
             return {
                 ...state,
                 history: [...state.history.splice(-historyLength - 1), data],
@@ -27,9 +26,9 @@ export default function (state = initialState, action) {
             };
 
         case TYPES.CHAT_SET_MESSAGE:
-            return data.length > 200
-                ? state
-                : {...state, message: data};
+            return data.length <= 200
+                ? {...state, message: data}
+                : state;
 
         case TYPES.CHAT_SET_CAN_I_SEND_MESSAGE:
             return {

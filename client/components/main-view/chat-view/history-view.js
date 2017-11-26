@@ -44,9 +44,9 @@ class HistoryView extends Component {
                     return (
                         <div key={`post_${index}`}>
                             <span className="post post__timeStamp">{dateStr}</span>
-                            {type === 'userMsg'
+                            {type === 'responseNewMessage'
                                 ? <span>
-                                    <span className="post post__userName"><strong>{userName}</strong></span>
+                                    <span className="post post__userName"><strong><em>{userName}:</em></strong></span>
                                     {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
                                                            glyph={isMuted ? "remove" : "ok"}/>}
                                     {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}

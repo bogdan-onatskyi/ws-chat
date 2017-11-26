@@ -2,14 +2,11 @@ const path = require("path");
 const express = require('express');
 const app = express();
 
-// const http = require('http');
-// const url = require('url');
-// const WebSocket = require('ws');
-
 const session = require('express-session');
 const bodyParser = require('body-parser');
 
 // const setupConnection = require('./db/setup-connection');
+const startChatServer = require('./start-chat-server');
 
 const {toString} = require('../utils/utils');
 
@@ -64,16 +61,8 @@ app.use(session({
 //     store: mongoStore(mongoStoreConnectionArgs())
 // }));
 
-const users = [ // todo Заменить на базу данных
-    {userName: 'user', password: 'password', isAdmin: true, isBanned: false, isMuted: false, color: 'green'},
-    {userName: 'user1', password: 'password1', isAdmin: false, isBanned: false, isMuted: false, color: 'green'},
-    {userName: 'user2', password: 'password2', isAdmin: false, isBanned: false, isMuted: false, color: 'green'},
-    {userName: 'user3', password: 'password3', isAdmin: false, isBanned: false, isMuted: false, color: 'green'},
-];
-
-// let isChatServerRunning = false;
-// const chatHistory = [];
-// let loggedUsersArray = [];
+// todo Заменить на базу данных
+const users = require('./users');
 
 app.post('/login', function (request, response) {
     const requestData = request.body;
@@ -82,8 +71,6 @@ app.post('/login', function (request, response) {
     console.log(toString('You posted:', requestData));
 
     let responseData = {
-        // userName: '',
-        // password: '', isAdmin: false, isBanned: false, isMuted: false, color: 'green',
         auth: 'denied'
     };
 
@@ -108,8 +95,8 @@ app.post('/login', function (request, response) {
 
     console.log(toString('Server answered:', responseData));
 
-    if (responseData.auth === 'ok' && !isChatServerRunning) {
-
+    if (responseData.auth === 'ok') {
+        startChatServer(app);
     }
 });
 
