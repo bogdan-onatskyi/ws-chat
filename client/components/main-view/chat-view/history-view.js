@@ -35,7 +35,7 @@ class HistoryView extends Component {
         return (
             <div className="history">
                 {history.map((post, index) => {
-                    const {type, timeStamp, userName, isAdmin, isBanned, isMuted, color, message} = post;
+                    const {type, timeStamp, userName, isAdmin, color, message} = post;
                     const date = new Date(timeStamp);
                     const dateStr =
                         `${addZero(date.getDate())}.${addZero(date.getMonth())}.${date.getFullYear()} \
@@ -47,10 +47,6 @@ class HistoryView extends Component {
                             {type === 'responseNewMessage'
                                 ? <span>
                                     <span className="post post__userName"><strong><em>{userName}:</em></strong></span>
-                                    {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
-                                                           glyph={isMuted ? "remove" : "ok"}/>}
-                                    {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
-                                                           glyph={isBanned ? "volume-off" : "volume-down"}/>}
                                 </span>
                                 : <span/>
                             }

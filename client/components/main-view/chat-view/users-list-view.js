@@ -13,29 +13,25 @@ class UsersListView extends Component {
         isAdmin: PropTypes.bool.isRequired,
         usersList: PropTypes.array.isRequired,
 
-        setIsMuted: PropTypes.func.isRequired,
-        setI: PropTypes.func.isRequired,
+        handleIsMuted: PropTypes.func.isRequired,
+        handleIsBanned: PropTypes.func.isRequired,
     };
 
-    handleIsMuted = (index) => {
+    setIsMuted = (index) => {
         if (this.props.isAdmin) {
-            const {usersList, setIsMuted} = this.props;
+            const {usersList, handleIsMuted} = this.props;
             const {userName, isMuted} = usersList[index];
 
-            setIsMuted(userName, !isMuted);
-
-            console.log(`isMuted = ${usersList[index].isMuted}, index = ${index}`);
+            handleIsMuted(userName, !isMuted);
         }
     };
 
-    handleIsBanned = (index) => {
+    setIsBanned = (index) => {
         if (this.props.isAdmin) {
-            const {usersList, setIsBanned} = this.props;
+            const {usersList, handleIsBanned} = this.props;
             const {userName, isBanned} = usersList[index];
 
-            setIsBanned(userName, !isBanned);
-
-            console.log(`isBanned = ${usersList[index].isBanned}, index = ${index}`);
+            handleIsBanned(userName, !isBanned);
         }
     };
 
@@ -48,25 +44,54 @@ class UsersListView extends Component {
 
                 {usersList.map((user, index) => {
                     const {userName, isMuted, isBanned} = user;
-                    return (
-                        <div key={`user-${index}`}
-                             className={cn("chat-view__users-list--user",
-                                 {"chat-view__users-list--user-editable": isAdmin})}>
-                            <div className={cn("chat-view__users-list--user",
-                                {"chat-view__users-list--user-editable": isAdmin})}>
+                    if (!isBanned) {
+                        return (
+                            <div key={`user-${index}`}
+                                 className={cn("chat-view__users-list--user",
+                                     {"chat-view__users-list--user-editable": isAdmin})}>
+                                <div className={cn("chat-view__users-list--user",
+                                    {"chat-view__users-list--user-editable": isAdmin})}>
 
-                                {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
-                                                       glyph={isMuted ? "volume-off" : "volume-down"}
-                                                       onClick={this.handleIsMuted.bind(this, index)}/>}
+                                    {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
+                                                           glyph={isMuted ? "volume-off" : "volume-down"}
+                                                           onClick={this.setIsMuted.bind(this, index)}/>}
 
-                                {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
-                                                       glyph={isBanned ? "remove" : "ok"}
-                                                       onClick={this.handleIsBanned.bind(this, index)}/>}
+                                    {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
+                                                           glyph={isBanned ? "remove" : "ok"}
+                                                           onClick={this.setIsBanned.bind(this, index)}/>}
 
-                                {userName}
+                                    {userName}
+                                </div>
                             </div>
-                        </div>
-                    );
+                        );
+                    }
+                })}
+
+                <h4><strong>Banned users:</strong></h4>
+
+                {usersList.map((user, index) => {
+                    const {userName, isMuted, isBanned} = user;
+                    if (isBanned) {
+                        return (
+                            <div key={`user-${index}`}
+                                 className={cn("chat-view__users-list--user",
+                                     {"chat-view__users-list--user-editable": isAdmin})}>
+                                <div className={cn("chat-view__users-list--user",
+                                    {"chat-view__users-list--user-editable": isAdmin})}>
+
+                                    {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
+                                                           glyph={isMuted ? "volume-off" : "volume-down"}
+                                                           onClick={this.setIsMuted.bind(this, index)}/>}
+
+                                    {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
+                                                           glyph={isBanned ? "remove" : "ok"}
+                                                           onClick={this.setIsBanned.bind(this, index)}/>}
+
+                                    {userName}
+                                </div>
+                            </div>
+                        );
+                    }
                 })}
             </Col>
         );
@@ -81,8 +106,8 @@ function mapStateToProps(state) {
 
 // function mapDispatchToProps(dispatch) {
 //     return {
-//         // setUsersList: data => dispatch(setUsersList(data)),
-//         // clearUsersList: data => dispatch(clearUsersList(data)),
+//         setIsMuted: bool => dispatch(setIsMuted(bool)),
+//         setIsBanned: bool => dispatch(setIsBanned(bool)),
 //     };
 // }
 

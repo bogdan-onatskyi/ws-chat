@@ -24,6 +24,11 @@ class MainView extends Component {
         setPassword: PropTypes.func.isRequired
     };
 
+    state = {
+        Auth: ''
+    };
+
+
     handleLogin = (e) => {
         e.preventDefault();
 
@@ -43,6 +48,11 @@ class MainView extends Component {
                             const {data} = response;
 
                             setIsLoggedIn(data.auth === 'ok');
+
+                            this.setState(state => state.Auth = data.auth === 'ok'
+                                ? ''
+                                : data.auth
+                            );
 
                             return data;
                         })
@@ -77,13 +87,14 @@ class MainView extends Component {
                                      onChange={this.handleChangePassword}/>
                         <Button bsStyle="primary" type="submit">Login</Button>
                     </InputGroup>
+                    <p>{this.state.Auth}</p>
                 </FormGroup>
             </form>
         );
     };
 
     render = () => this.props.user.isLoggedIn
-        ? <ChatView serverURL="ws://localhost:8080"/>
+        ? <ChatView serverURL="ws://localhost:8080?token={this.props.user.token}"/>
         : this.renderLoginForm();
 }
 

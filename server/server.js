@@ -71,21 +71,30 @@ app.post('/login', function (request, response) {
     console.log(toString('You posted:', requestData));
 
     let responseData = {
-        auth: 'denied'
+        auth: 'Access denied'
     };
 
     // todo connect to db
     users.forEach(user => {
-        if (requestData.userName === user.userName && requestData.password === user.password)
-            responseData = {
-                userName: user.userName,
-                password: user.password,
-                isAdmin: user.isAdmin,
-                isBanned: user.isBanned,
-                isMuted: user.isMuted,
-                color: user.color,
-                auth: 'ok'
-            };
+        if (requestData.userName === user.userName && requestData.password === user.password) {
+
+            if (user.isBanned) {
+                responseData = {
+                    auth: 'Access denied: you are banned by admin.'
+                };
+            } else {
+                responseData = {
+                    userName: user.userName,
+                    password: user.password,
+                    isAdmin: user.isAdmin,
+                    isBanned: user.isBanned,
+                    isMuted: user.isMuted,
+                    color: user.color,
+                    auth: 'ok',
+                    token: user.token
+                };
+            }
+        }
     });
 
     if (responseData.auth === 'ok') request.session.userName = responseData.userName; // todo auth
@@ -95,9 +104,9 @@ app.post('/login', function (request, response) {
 
     console.log(toString('Server answered:', responseData));
 
-    if (responseData.auth === 'ok') {
-        startChatServer(app);
-    }
+    // if (responseData.auth === 'ok') {
+    //     startChatServer(app);
+    // }
 });
 
 // function loadUserFromDB(req, res, next) {

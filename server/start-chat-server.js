@@ -4,6 +4,7 @@ const WebSocket = require('ws');
 const users = require('./users');
 
 let loggedUsersArray = [];
+let bannedUsersArray = [];
 
 let isChatServerRunning = false;
 
@@ -20,6 +21,20 @@ module.exports = app => {
     });
 
     wss.on('connection', ws => {
+
+        // new client connect
+        // ws.on('open', function open() {
+        //     const location = url.parse(req.url, true);
+        //     const userToken = location.query.token;
+        //
+        //     //ws.id = 'random string';
+        //     // ws.user = User.find('token',userToken).one();
+        //
+        // });
+
+        //
+        // let userToken = server.query('token');
+        // // find user by token
 
         ws.on('message', message => {
             if (process.env.NODE_ENV === 'development') {
@@ -59,24 +74,58 @@ module.exports = app => {
                 ws.send(JSON.stringify(responseObject));
             };
 
+            // const getBannedUsersList = () => {
+            //     const array = [];
+            //
+            //     for (let user of users) {
+            //         if (user.isBanned) {
+            //             const {userName, isAdmin, isBanned, isMuted, color} = user;
+            //
+            //             array.push({userName, isAdmin, isBanned, isMuted, color});
+            //         }
+            //     }
+            //
+            //     array.sort((a, b) => {
+            //         if (a.userName > b.userName) return 1;
+            //         if (a.userName < b.userName) return -1;
+            //     });
+            //
+            //     responseObject = {
+            //         ...responseObject,
+            //         type: 'responseGetBannedUsersList',
+            //         data: array
+            //     };
+            // };
+
             const getUsersList = () => {
+
+                loggedUsersArray.forEach(loggedUser => {
+                    for (let user of users) {
+                        if (loggedUser.userName === user.userName) {
+                            const {isBanned, isMuted, color} = user;
+
+                            loggedUser.isBanned = isBanned;
+                            loggedUser.isMuted = isMuted;
+                            loggedUser.color = color;
+                        }
+                    }
+                });
+
                 const array = loggedUsersArray.map(user => {
                     const {userName, isAdmin, isBanned, isMuted, color} = user;
                     return {userName, isAdmin, isBanned, isMuted, color};
                 });
 
                 array.sort((a, b) => {
-                        if (a > b) return 1;
-                        if (a < b) return -1;
-                    });
+                    if (a.userName > b.userName) return 1;
+                    if (a.userName < b.userName) return -1;
+                });
 
                 responseObject = {
                     ...responseObject,
                     type: 'responseGetUsersList',
                     data: array
                 };
-
-                console.log(`81 = ${array.length} ${array[0].userName}`);
 
                 // ws.send(JSON.stringify(responseObject));
             };
@@ -134,33 +183,25 @@ module.exports = app => {
                 for (let user of users) {
                     if (user.userName === userName) {
                         user.isMuted = requestObject.isMuted;
-                    }
-                }
-                for (let user of loggedUsersArray) {
-                    if (user.userName === userName) {
-                        user.isMuted = requestObject.isMuted;
+                        console.log(`135: requestObject.isMuted = ${requestObject.isMuted}`);
                     }
                 }
             };
 
             const setIsBanned = () => {
+                const text = requestObject.isBanned ? 'banned' : 'unbanned';
                 responseObject = {
                     ...responseObject,
                     type: 'responseSetIsBanned',
-                    message: `Chat message: ${userName} is banned...`
+                    message: `Chat message: ${userName} is ${text}...`
                 };
 
                 for (let user of users) {
                     if (user.userName === userName) {
                         user.isBanned = requestObject.isBanned;
+                        console.log(`150: requestObject.isBanned = ${requestObject.isBanned}`);
                     }
                 }
-                for (let user of users) {
-                    if (user.userName === userName) {
-                        user.isBanned = requestObject.isBanned;
-                    }
-                }
-
             };
 
             switch (requestObject.type) {
@@ -185,7 +226,6 @@ module.exports = app => {
                     break;
 
                 case 'setIsMuted':
-                    console.log(`172`);
                     setIsMuted();
                     break;
 

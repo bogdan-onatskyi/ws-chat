@@ -103,6 +103,21 @@ class ChatView extends Component {
 
                 case 'responseGetUsersList':
                     setUsersList(receivedObject.data);
+
+                    const {user, usersList, setIsMuted, setIsBanned, setMessage, setIsLoggedIn} = this.props;
+
+                    usersList.forEach(u => {
+                        if (u.userName === user.userName) {
+                            setIsMuted(u.isMuted);
+
+                            if (u.isBanned !== user.isBanned) {
+                                setIsBanned(u.isBanned);
+                                setIsLoggedIn(false);
+                            }
+                            setMessage('');
+                        }
+                    });
+
                     return;
 
                 case 'responseNewUser':
@@ -120,15 +135,6 @@ class ChatView extends Component {
                 case 'responseSetIsMuted':
                     addPostToHistory(receivedObject);
                     getUsersList();
-
-                    const {user, usersList, setIsMuted, setMessage} = this.props;
-
-                    usersList.forEach(u => {
-                        if (u.userName === user.userName) {
-                            setIsMuted(u.isMuted);
-                            setMessage('');
-                        }
-                    });
                     return;
 
                 case 'responseSetIsBanned':
@@ -286,8 +292,8 @@ class ChatView extends Component {
         const {isAdmin} = this.props.user;
 
         return <UsersListView isAdmin={isAdmin}
-                              setIsMuted={this.handleIsMuted}
-                              setIsBanned={this.handleIsBanned}/>;
+                              handleIsMuted={this.handleIsMuted}
+                              handleIsBanned={this.handleIsBanned}/>;
     };
 
     render = () => (
