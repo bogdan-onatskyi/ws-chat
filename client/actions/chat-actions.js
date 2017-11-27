@@ -1,8 +1,8 @@
 import * as TYPES from './types';
 
-export function getDataFromServer(data) {
+export function setUserInfo(data) {
     return {
-        type: TYPES.CHAT_GET_DATA_FROM_SERVER,
+        type: TYPES.CHAT_SET_USER_INFO,
         data
     };
 }

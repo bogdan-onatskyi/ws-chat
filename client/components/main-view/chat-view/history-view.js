@@ -35,7 +35,7 @@ class HistoryView extends Component {
         return (
             <div className="history">
                 {history.map((post, index) => {
-                    const {type, timeStamp, userName, isAdmin, color, message} = post;
+                    const {type, timeStamp, userName, color, message} = post;
                     const date = new Date(timeStamp);
                     const dateStr =
                         `${addZero(date.getDate())}.${addZero(date.getMonth())}.${date.getFullYear()} \

@@ -11,7 +11,7 @@ import Button from 'react-bootstrap/es/Button';
 
 import ChatView from './chat-view/chat-view';
 
-import {setIsLoggedIn, setUserName, setPassword} from '../../actions/user-actions'
+import {setIsLoggedIn, setUserName, setPassword, setToken} from '../../actions/user-actions'
 
 import './main-view.scss';
 
@@ -19,20 +19,20 @@ class MainView extends Component {
     static PropTypes = {
         user: PropTypes.object.isRequired,
 
-        setIsLoggedIn: PropTypes.func.isRequired,
-        setUserName: PropTypes.func.isRequired,
-        setPassword: PropTypes.func.isRequired
+        handleIsLoggedIn: PropTypes.func.isRequired,
+        handleUserName: PropTypes.func.isRequired,
+        handlePassword: PropTypes.func.isRequired,
+        handleToken: PropTypes.func.isRequired
     };
 
     state = {
-        Auth: ''
+        Auth: '',
     };
-
 
     handleLogin = (e) => {
         e.preventDefault();
 
-        const {user, setIsLoggedIn} = this.props;
+        const {user, handleIsLoggedIn, handleUserName} = this.props;
         const {userName, password} = user;
 
         const request = {
@@ -47,12 +47,14 @@ class MainView extends Component {
                         .then(response => {
                             const {data} = response;
 
-                            setIsLoggedIn(data.auth === 'ok');
+                            handleIsLoggedIn(data.auth === 'ok');
 
                             this.setState(state => state.Auth = data.auth === 'ok'
                                 ? ''
                                 : data.auth
                             );
+
+                            handleUserName(data.userName);
 
                             return data;
                         })
@@ -67,11 +69,11 @@ class MainView extends Component {
     };
 
     handleChangeUserName = (e) => {
-        this.props.setUserName(e.target.value);
+        this.props.handleUserName(e.target.value);
     };
 
     handleChangePassword = (e) => {
-        this.props.setPassword(e.target.value);
+        this.props.handlePassword(e.target.value);
     };
 
     renderLoginForm = () => {
@@ -94,7 +96,7 @@ class MainView extends Component {
     };
 
     render = () => this.props.user.isLoggedIn
-        ? <ChatView serverURL="ws://localhost:8080?token={this.props.user.token}"/>
+        ? <ChatView serverURL={`ws://localhost:8080?token=${this.props.user.token}`}/>
         : this.renderLoginForm();
 }
 
@@ -106,9 +108,10 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        setIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
-        setUserName: userName => dispatch(setUserName(userName)),
-        setPassword: password => dispatch(setPassword(password)),
+        handleIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
+        handleUserName: userName => dispatch(setUserName(userName)),
+        handlePassword: password => dispatch(setPassword(password)),
+        handleToken: token => dispatch(setToken(token)),
     };
 }
 

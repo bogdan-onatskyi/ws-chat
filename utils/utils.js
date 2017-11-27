@@ -9,3 +9,7 @@ exports.toString = (comment, data) => {
 
     return `${comment} { ${valuesArray.join(', ')} }`;
 };
+
+exports.generateToken = () => {
+    return 'fake token';
+};

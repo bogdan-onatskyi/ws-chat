@@ -21,6 +21,13 @@ export function setPassword(data) {
     };
 }
 
+export function setToken(data) {
+    return {
+        type: TYPES.USER_SET_TOKEN,
+        data
+    };
+}
+
 export function setIsMuted(data) {
     return {
         type: TYPES.USER_SET_IS_MUTED,

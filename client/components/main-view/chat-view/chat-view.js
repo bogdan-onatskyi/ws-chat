@@ -9,10 +9,10 @@ import Button from 'react-bootstrap/es/Button';
 import Col from "react-bootstrap/es/Col";
 
 import {
-    getDataFromServer, addPostToHistory, clearHistory,
+    setUserInfo, addPostToHistory, clearHistory,
     setMessage, setCanISendMessage, setSendMessageCountdown
 } from '../../../actions/chat-actions';
-import {setUsersList, clearUsersList} from '../../../actions/users-list-actions';
+import {setOnlineUsersList, setBannedUsersList, clearUsersList} from '../../../actions/users-list-actions';
 import {setIsLoggedIn, setIsMuted, setIsBanned} from '../../../actions/user-actions';
 
 import HistoryView from './history-view';
@@ -30,46 +30,62 @@ class ChatView extends Component {
         canISendMessage: PropTypes.bool.isRequired,
         sendMessageCountdown: PropTypes.number.isRequired,
 
-        usersList: PropTypes.array.isRequired,
+        // usersList: PropTypes.array.isRequired,
+        onlineUsersList: PropTypes.array.isRequired,
+        bannedUsersList: PropTypes.array.isRequired,
 
-        getDataFromServer: PropTypes.func.isRequired,
-        addPostToHistory: PropTypes.func.isRequired,
-        clearHistory: PropTypes.func.isRequired,
-        setMessage: PropTypes.func.isRequired,
-        setCanISendMessage: PropTypes.func.isRequired,
-        setSendMessageCountdown: PropTypes.func.isRequired,
+        handleSetUserInfo: PropTypes.func.isRequired,
+        handleAddPostToHistory: PropTypes.func.isRequired,
+        handleClearHistory: PropTypes.func.isRequired,
+        handleSetMessage: PropTypes.func.isRequired,
+        handleSetCanISendMessage: PropTypes.func.isRequired,
+        handleSetSendMessageCountdown: PropTypes.func.isRequired,
 
-        setIsLoggedIn: PropTypes.func.isRequired,
-        setIsMuted: PropTypes.func.isRequired,
-        setIsBanned: PropTypes.func.isRequired,
+        handleSetOnlineUsersList: PropTypes.func.isRequired,
+        handleSetBannedUsersList: PropTypes.func.isRequired,
+        handleClearUsersList: PropTypes.func.isRequired,
+
+        handleSetIsLoggedIn: PropTypes.func.isRequired,
+        handleSetIsMuted: PropTypes.func.isRequired,
+        handleSetIsBanned: PropTypes.func.isRequired,
     };
 
     timeOut = 5000;
 
     componentDidMount() {
-        const {
-            serverURL,
-            user, getDataFromServer,
-            addPostToHistory, clearHistory,
-            setUsersList, clearUsersList
-        } = this.props;
-        const {userName, password} = user;
+        const {serverURL, user} = this.props;
+        const {userName, isAdmin} = user;
 
         this.socket = new WebSocket(serverURL);
 
-        const getUsersList = () => {
+        const getOnlineUsersList = () => {
             const requestObject = {
-                type: 'getUsersList',
+                type: 'getOnlineUsersList',
                 userName
             };
             this.socket.send(JSON.stringify(requestObject));
         };
 
-        this.socket.onopen = event => {
+        const getBannedUsersList = () => {
+            const requestObject = {
+                type: 'getBannedUsersList',
+                userName
+            };
+            this.socket.send(JSON.stringify(requestObject));
+        };
+
+        const getUsersList = () => {
+            getOnlineUsersList();
+            if (isAdmin) getBannedUsersList();
+        };
+
+        this.socket.onopen = () => {
+            const {userName, token} = this.props.user;
+
             let requestObject = {
                 type: 'getUserInfo',
                 userName,
-                password,
+                token,
             };
             this.socket.send(JSON.stringify(requestObject));
 
@@ -87,6 +103,13 @@ class ChatView extends Component {
 
             if (!data) return;
 
+            const {
+                user, onlineUsersList, bannedUsersList, handleSetUserInfo, handleSetMessage,
+                handleSetOnlineUsersList, handleSetBannedUsersList,
+                handleSetIsLoggedIn, handleSetIsMuted, handleSetIsBanned,
+                handleAddPostToHistory
+            } = this.props;
+
             let receivedObject = {};
             try {
                 receivedObject = JSON.parse(data);
@@ -98,30 +121,45 @@ class ChatView extends Component {
 
             switch (receivedObject.type) {
                 case 'responseGetUserInfo':
-                    getDataFromServer(receivedObject.data);
+                    handleSetUserInfo(receivedObject.data);
                     return;
 
-                case 'responseGetUsersList':
-                    setUsersList(receivedObject.data);
+                case 'responseGetOnlineUsersList':
+                    handleSetOnlineUsersList(receivedObject.data);
 
-                    const {user, usersList, setIsMuted, setIsBanned, setMessage, setIsLoggedIn} = this.props;
-
-                    usersList.forEach(u => {
+                    onlineUsersList.forEach(u => {
                         if (u.userName === user.userName) {
-                            setIsMuted(u.isMuted);
+                            handleSetIsMuted(u.isMuted);
 
                             if (u.isBanned !== user.isBanned) {
-                                setIsBanned(u.isBanned);
-                                setIsLoggedIn(false);
+                                handleSetIsBanned(u.isBanned);
+                                handleSetIsLoggedIn(false);
                             }
-                            setMessage('');
+                            handleSetMessage('');
+                        }
+                    });
+
+                    return;
+
+                case 'responseGetBannedUsersList':
+                    handleSetBannedUsersList(receivedObject.data);
+
+                    bannedUsersList.forEach(u => {
+                        if (u.userName === user.userName) {
+                            handleSetIsMuted(u.isMuted);
+
+                            if (u.isBanned !== user.isBanned) {
+                                handleSetIsBanned(u.isBanned);
+                                handleSetIsLoggedIn(false);
+                            }
+                            handleSetMessage('');
                         }
                     });
 
                     return;
 
                 case 'responseNewUser':
-                    addPostToHistory(receivedObject);
+                    handleAddPostToHistory(receivedObject);
                     getUsersList();
                     return;
 
@@ -133,12 +171,12 @@ class ChatView extends Component {
                     break;
 
                 case 'responseSetIsMuted':
-                    addPostToHistory(receivedObject);
+                    handleAddPostToHistory(receivedObject);
                     getUsersList();
                     return;
 
                 case 'responseSetIsBanned':
-                    addPostToHistory(receivedObject);
+                    handleAddPostToHistory(receivedObject);
                     getUsersList();
                     return;
 
@@ -146,12 +184,14 @@ class ChatView extends Component {
                     return;
             }
 
-            addPostToHistory(receivedObject);
+            handleAddPostToHistory(receivedObject);
         };
 
         this.socket.onclose = event => {
-            clearHistory();
-            clearUsersList();
+            const {handleClearHistory, handleClearUsersList} = this.props;
+
+            handleClearHistory();
+            handleClearUsersList();
 
             event.wasClean
                 ? console.log('Соединение закрыто чисто.')
@@ -197,12 +237,16 @@ class ChatView extends Component {
     handleSendMessage = (e) => {
         e.preventDefault();
 
-        const {user, message, canISendMessage, setMessage, setCanISendMessage, setSendMessageCountdown} = this.props;
+        const {
+            user, message, canISendMessage,
+            handleSetMessage, handleSetCanISendMessage, handleSetSendMessageCountdown
+        } = this.props;
+
         const {userName} = user;
 
         if (canISendMessage) {
             if (message !== '') {
-                setCanISendMessage(false);
+                handleSetCanISendMessage(false);
 
                 const requestObject = {
                     type: 'newMessage',
@@ -211,22 +255,22 @@ class ChatView extends Component {
                 };
 
                 this.socket.send(JSON.stringify(requestObject));
-                setMessage('');
+                handleSetMessage('');
 
                 let timeOut = this.timeOut;
 
                 const timerId = setInterval(() => {
                     timeOut -= 1000;
-                    setSendMessageCountdown(timeOut);
+                    handleSetSendMessageCountdown(timeOut);
 
                     if (this.props.sendMessageCountdown <= 0) {
                         clearInterval(timerId);
-                        setCanISendMessage(true);
-                        setSendMessageCountdown(0);
+                        handleSetCanISendMessage(true);
+                        handleSetSendMessageCountdown(0);
                     }
                 }, 1000);
 
-                setSendMessageCountdown(timeOut);
+                handleSetSendMessageCountdown(timeOut);
             }
         }
     };
@@ -234,10 +278,10 @@ class ChatView extends Component {
     handleMessageChange = (e) => {
         if (this.props.user.isMuted) return;
 
-        const {setMessage, canISendMessage} = this.props;
+        const {handleSetMessage, canISendMessage} = this.props;
 
         if (canISendMessage) {
-            setMessage(e.target.value);
+            handleSetMessage(e.target.value);
         }
     };
 
@@ -252,7 +296,7 @@ class ChatView extends Component {
     };
 
     handleExitChat = () => {
-        this.props.setIsLoggedIn(false);
+        this.props.handleSetIsLoggedIn(false);
     };
 
     renderChat = () => {
@@ -312,25 +356,29 @@ function mapStateToProps(state) {
         canISendMessage: state.chat.canISendMessage,
         sendMessageCountdown: state.chat.sendMessageCountdown,
 
-        usersList: state.usersList.usersList,
+        // usersList: state.usersList.usersList,
+        onlineUsersList: state.usersList.onlineUsersList,
+        bannedUsersList: state.usersList.bannedUsersList,
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
-        getDataFromServer: data => dispatch(getDataFromServer(data)),
-        addPostToHistory: data => dispatch(addPostToHistory(data)),
-        clearHistory: () => dispatch(clearHistory()),
-        setMessage: data => dispatch(setMessage(data)),
-        setCanISendMessage: data => dispatch(setCanISendMessage(data)),
-        setSendMessageCountdown: data => dispatch(setSendMessageCountdown(data)),
+        handleSetUserInfo: data => dispatch(setUserInfo(data)),
 
-        setUsersList: data => dispatch(setUsersList(data)),
-        clearUsersList: data => dispatch(clearUsersList(data)),
+        handleAddPostToHistory: data => dispatch(addPostToHistory(data)),
+        handleClearHistory: () => dispatch(clearHistory()),
+        handleSetMessage: data => dispatch(setMessage(data)),
+        handleSetCanISendMessage: data => dispatch(setCanISendMessage(data)),
+        handleSetSendMessageCountdown: data => dispatch(setSendMessageCountdown(data)),
 
-        setIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
-        setIsMuted: bool => dispatch(setIsMuted(bool)),
-        setIsBanned: bool => dispatch(setIsBanned(bool)),
+        handleSetOnlineUsersList: data => dispatch(setOnlineUsersList(data)),
+        handleSetBannedUsersList: data => dispatch(setBannedUsersList(data)),
+        handleClearUsersList: data => dispatch(clearUsersList(data)),
+
+        handleSetIsLoggedIn: bool => dispatch(setIsLoggedIn(bool)),
+        handleSetIsMuted: bool => dispatch(setIsMuted(bool)),
+        handleSetIsBanned: bool => dispatch(setIsBanned(bool)),
     };
 }
 

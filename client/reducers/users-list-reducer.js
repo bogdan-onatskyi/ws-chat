@@ -3,8 +3,8 @@ import * as TYPES from '../actions/types';
 const initialState = {
     usersList: [],
 
-    online: [],
-    banned: []
+    onlineUsersList: [],
+    bannedUsersList: []
 };
 
 export default function (state = initialState, action) {
@@ -20,21 +20,21 @@ export default function (state = initialState, action) {
         case TYPES.USERSLIST_SET_ONLINE_LIST:
             return {
                 ...state,
-                online: data
+                onlineUsersList: data
             };
 
         case TYPES.USERSLIST_SET_BANNED_LIST:
             return {
                 ...state,
-                banned: data
+                bannedUsersList: data
             };
 
         case TYPES.USERSLIST_CLEAR_LIST:
             return {
                 ...state,
                 usersList: [],
-                online: [],
-                banned: []
+                onlineUsersList: [],
+                bannedUsersList: []
             };
 
         default:

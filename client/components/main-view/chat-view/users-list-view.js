@@ -11,38 +11,48 @@ import Glyphicon from "react-bootstrap/es/Glyphicon";
 class UsersListView extends Component {
     static PropTypes = {
         isAdmin: PropTypes.bool.isRequired,
-        usersList: PropTypes.array.isRequired,
+
+        onlineUsersList: PropTypes.array.isRequired,
+        bannedUsersList: PropTypes.array.isRequired,
 
         handleIsMuted: PropTypes.func.isRequired,
         handleIsBanned: PropTypes.func.isRequired,
     };
 
-    setIsMuted = (index) => {
+    setIsMuted = (onlineIndex, bannedIndex) => {
         if (this.props.isAdmin) {
-            const {usersList, handleIsMuted} = this.props;
-            const {userName, isMuted} = usersList[index];
+            const {onlineUsersList, bannedUsersList, handleIsMuted} = this.props;
+
+            const {userName, isMuted} =
+                onlineIndex === null
+                    ? bannedUsersList[bannedIndex]
+                    : onlineUsersList[onlineIndex];
 
             handleIsMuted(userName, !isMuted);
         }
     };
 
-    setIsBanned = (index) => {
+    setIsBanned = (onlineIndex, bannedIndex) => {
         if (this.props.isAdmin) {
-            const {usersList, handleIsBanned} = this.props;
-            const {userName, isBanned} = usersList[index];
+            const {onlineUsersList, bannedUsersList, handleIsBanned} = this.props;
+
+            const {userName, isBanned} =
+                onlineIndex === null
+                    ? bannedUsersList[bannedIndex]
+                    : onlineUsersList[onlineIndex];
 
             handleIsBanned(userName, !isBanned);
         }
     };
 
     render() {
-        const {isAdmin, usersList} = this.props;
+        const {isAdmin, onlineUsersList, bannedUsersList} = this.props;
 
         return (
             <Col xs={3} className="chat-view__users-list">
                 <h4><strong>Online users:</strong></h4>
 
-                {usersList.map((user, index) => {
+                {onlineUsersList.map((user, index) => {
                     const {userName, isMuted, isBanned} = user;
                     if (!isBanned) {
                         return (
@@ -54,11 +64,11 @@ class UsersListView extends Component {
 
                                     {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
                                                            glyph={isMuted ? "volume-off" : "volume-down"}
-                                                           onClick={this.setIsMuted.bind(this, index)}/>}
+                                                           onClick={this.setIsMuted.bind(this, index, null)}/>}
 
                                     {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
                                                            glyph={isBanned ? "remove" : "ok"}
-                                                           onClick={this.setIsBanned.bind(this, index)}/>}
+                                                           onClick={this.setIsBanned.bind(this, index, null)}/>}
 
                                     {userName}
                                 </div>
@@ -69,7 +79,7 @@ class UsersListView extends Component {
 
                 <h4><strong>Banned users:</strong></h4>
 
-                {usersList.map((user, index) => {
+                {bannedUsersList.map((user, index) => {
                     const {userName, isMuted, isBanned} = user;
                     if (isBanned) {
                         return (
@@ -81,11 +91,11 @@ class UsersListView extends Component {
 
                                     {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
                                                            glyph={isMuted ? "volume-off" : "volume-down"}
-                                                           onClick={this.setIsMuted.bind(this, index)}/>}
+                                                           onClick={this.setIsMuted.bind(this, null, index)}/>}
 
                                     {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
                                                            glyph={isBanned ? "remove" : "ok"}
-                                                           onClick={this.setIsBanned.bind(this, index)}/>}
+                                                           onClick={this.setIsBanned.bind(this, null, index)}/>}
 
                                     {userName}
                                 </div>
@@ -100,7 +110,9 @@ class UsersListView extends Component {
 
 function mapStateToProps(state) {
     return {
-        usersList: state.usersList.usersList,
+        // usersList: state.usersList.usersList,
+        onlineUsersList: state.usersList.onlineUsersList,
+        bannedUsersList: state.usersList.bannedUsersList,
     };
 }
 

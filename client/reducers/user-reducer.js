@@ -1,10 +1,9 @@
 import * as TYPES from '../actions/types';
 
 const initialState = {
-    userId: null,
-
     userName: 'user',
     password: 'password',
+    token: '',
 
     isAdmin: false,
     isBanned: false,
@@ -36,6 +35,12 @@ export default function (state = initialState, action) {
                 password: data
             };
 
+        case TYPES.USER_SET_TOKEN:
+            return {
+                ...state,
+                token: data
+            };
+
         case TYPES.USER_SET_IS_MUTED:
             return {
                 ...state,
@@ -48,7 +53,7 @@ export default function (state = initialState, action) {
                 isBanned: data
             };
 
-        case TYPES.CHAT_GET_DATA_FROM_SERVER:
+        case TYPES.CHAT_SET_USER_INFO:
             return {
                 ...state,
                 ...data
