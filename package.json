@@ -6,7 +6,7 @@
   "scripts": {
     "start-dev-server": "cross-env NODE_ENV=development node ./server/server.js",
     "build-prod": "cross-env NODE_ENV=production webpack --progress --config webpack.prod.js",
-    "start-server": "nodemon ./server/server.js"
+    "start-wss": "nodemon ./server/wss.js"
   },
   "keywords": [],
   "author": {

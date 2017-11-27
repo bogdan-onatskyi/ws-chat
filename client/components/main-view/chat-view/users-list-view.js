@@ -45,67 +45,50 @@ class UsersListView extends Component {
         }
     };
 
-    render() {
-        const {isAdmin, onlineUsersList, bannedUsersList} = this.props;
+    renderUsersList = isOnline => {
 
+        const text = isOnline ? "Online" : "Banned";
+        const {isAdmin, onlineUsersList, bannedUsersList} = this.props;
+        const usersList = isOnline ? onlineUsersList : bannedUsersList;
+
+        return (
+            <div>
+                {usersList.map((user, index) => {
+                    const {userName, isMuted, isBanned} = user;
+                    return (
+                        <div key={`${text}-user-${index}`}
+                             className={cn("chat-view__users-list--user",
+                                 {"chat-view__users-list--user-editable": isAdmin})}>
+                            <div className={cn("chat-view__users-list--user",
+                                {"chat-view__users-list--user-editable": isAdmin})}>
+
+                                {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
+                                                       glyph={isMuted ? "volume-off" : "volume-down"}
+                                                       onClick={this.setIsMuted.bind(this, index, null)}/>}
+                                {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
+                                                       glyph={isBanned ? "remove" : "ok"}
+                                                       onClick={this.setIsBanned.bind(this, index, null)}/>}
+                                {userName}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
+    render() {
+        const {isAdmin} = this.props;
         return (
             <Col xs={3} className="chat-view__users-list">
                 <h4><strong>Online users:</strong></h4>
+                {this.renderUsersList(true)}
 
-                {onlineUsersList.map((user, index) => {
-                    const {userName, isMuted, isBanned} = user;
-                    if (!isBanned) {
-                        return (
-                            <div key={`user-${index}`}
-                                 className={cn("chat-view__users-list--user",
-                                     {"chat-view__users-list--user-editable": isAdmin})}>
-                                <div className={cn("chat-view__users-list--user",
-                                    {"chat-view__users-list--user-editable": isAdmin})}>
-
-                                    {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
-                                                           glyph={isMuted ? "volume-off" : "volume-down"}
-                                                           onClick={this.setIsMuted.bind(this, index, null)}/>}
-
-                                    {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
-                                                           glyph={isBanned ? "remove" : "ok"}
-                                                           onClick={this.setIsBanned.bind(this, index, null)}/>}
-
-                                    {userName}
-                                </div>
-                            </div>
-                        );
-                    }
-                })}
-
-                <h4><strong>Banned users:</strong></h4>
-
-                {bannedUsersList.map((user, index) => {
-                    const {userName, isMuted, isBanned} = user;
-                    if (isBanned) {
-                        return (
-                            <div key={`user-${index}`}
-                                 className={cn("chat-view__users-list--user",
-                                     {"chat-view__users-list--user-editable": isAdmin})}>
-                                <div className={cn("chat-view__users-list--user",
-                                    {"chat-view__users-list--user-editable": isAdmin})}>
-
-                                    {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
-                                                           glyph={isMuted ? "volume-off" : "volume-down"}
-                                                           onClick={this.setIsMuted.bind(this, null, index)}/>}
-
-                                    {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
-                                                           glyph={isBanned ? "remove" : "ok"}
-                                                           onClick={this.setIsBanned.bind(this, null, index)}/>}
-
-                                    {userName}
-                                </div>
-                            </div>
-                        );
-                    }
-                })}
+                {isAdmin && <h4><strong>Banned users:</strong></h4>}
+                {isAdmin && this.renderUsersList(false)}
             </Col>
         );
-    };
+    }
 }
 
 function mapStateToProps(state) {

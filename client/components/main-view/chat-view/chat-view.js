@@ -30,7 +30,6 @@ class ChatView extends Component {
         canISendMessage: PropTypes.bool.isRequired,
         sendMessageCountdown: PropTypes.number.isRequired,
 
-        // usersList: PropTypes.array.isRequired,
         onlineUsersList: PropTypes.array.isRequired,
         bannedUsersList: PropTypes.array.isRequired,
 
@@ -128,34 +127,26 @@ class ChatView extends Component {
                     handleSetOnlineUsersList(receivedObject.data);
 
                     onlineUsersList.forEach(u => {
-                        if (u.userName === user.userName) {
+                        if (user.userName === u.userName) {
                             handleSetIsMuted(u.isMuted);
-
-                            if (u.isBanned !== user.isBanned) {
-                                handleSetIsBanned(u.isBanned);
-                                handleSetIsLoggedIn(false);
-                            }
+                            handleSetIsBanned(u.isBanned);
                             handleSetMessage('');
+                            if (u.isBanned) handleSetIsLoggedIn(false);
                         }
                     });
-
                     return;
 
                 case 'responseGetBannedUsersList':
                     handleSetBannedUsersList(receivedObject.data);
 
                     bannedUsersList.forEach(u => {
-                        if (u.userName === user.userName) {
+                        if (user.userName === u.userName) {
                             handleSetIsMuted(u.isMuted);
-
-                            if (u.isBanned !== user.isBanned) {
-                                handleSetIsBanned(u.isBanned);
-                                handleSetIsLoggedIn(false);
-                            }
+                            handleSetIsBanned(u.isBanned);
                             handleSetMessage('');
+                            if (u.isBanned) handleSetIsLoggedIn(false);
                         }
                     });
-
                     return;
 
                 case 'responseNewUser':
@@ -356,7 +347,6 @@ function mapStateToProps(state) {
         canISendMessage: state.chat.canISendMessage,
         sendMessageCountdown: state.chat.sendMessageCountdown,
 
-        // usersList: state.usersList.usersList,
         onlineUsersList: state.usersList.onlineUsersList,
         bannedUsersList: state.usersList.bannedUsersList,
     };
