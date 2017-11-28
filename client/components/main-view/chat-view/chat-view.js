@@ -52,12 +52,13 @@ class ChatView extends Component {
     timeOut = 5000;
 
     componentDidMount() {
-        const {serverURL, user} = this.props;
-        const {userName, isAdmin} = user;
+        const {serverURL} = this.props;
 
         this.socket = new WebSocket(serverURL);
 
         const getOnlineUsersList = () => {
+            const {userName} = this.props.user;
+
             const requestObject = {
                 type: 'getOnlineUsersList',
                 userName
@@ -66,6 +67,8 @@ class ChatView extends Component {
         };
 
         const getBannedUsersList = () => {
+            const {userName} = this.props.user;
+
             const requestObject = {
                 type: 'getBannedUsersList',
                 userName
@@ -73,7 +76,9 @@ class ChatView extends Component {
             this.socket.send(JSON.stringify(requestObject));
         };
 
-        const getUsersList = () => {
+        const getUsersList = (userName) => {
+            const {isAdmin} = this.props.user;
+
             getOnlineUsersList();
             if (isAdmin) getBannedUsersList();
         };
@@ -118,6 +123,7 @@ class ChatView extends Component {
                 return;
             }
 
+            console.log(`receivedObject.type = ${receivedObject.type}`);
             switch (receivedObject.type) {
                 case 'responseGetUserInfo':
                     handleSetUserInfo(receivedObject.data);
@@ -196,11 +202,12 @@ class ChatView extends Component {
     };
 
     componentWillUnmount() {
+        const {userName} = this.props.user;
+
         const requestObject = {
             type: 'userExit',
-            userName: this.props.user.userName,
+            userName,
         };
-
         this.socket.send(JSON.stringify(requestObject));
         this.socket.close();
     };
@@ -211,7 +218,6 @@ class ChatView extends Component {
             userName,
             isMuted
         };
-
         this.socket.send(JSON.stringify(requestObject));
     };
 

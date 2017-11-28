@@ -1,5 +1,12 @@
 import * as TYPES from './types';
 
+export function setAuth(data) {
+    return {
+        type: TYPES.USER_SET_AUTH,
+        data
+    };
+}
+
 export function setIsLoggedIn(data) {
     return {
         type: TYPES.USER_SET_IS_LOGGED_IN,

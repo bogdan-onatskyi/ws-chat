@@ -5,7 +5,7 @@ const express = require('express');
 const http = require('http');
 const uuid = require('uuid');
 
-const WebSocket = require('../..');
+const WebSocket = require('ws');
 
 const app = express();
 

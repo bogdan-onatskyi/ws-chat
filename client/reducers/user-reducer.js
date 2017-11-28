@@ -11,12 +11,20 @@ const initialState = {
     color: 'black',
 
     isLoggedIn: false,
+
+    auth: 'ok'
 };
 
 export default function (state = initialState, action) {
     const {type, data} = action;
 
     switch (type) {
+        case TYPES.USER_SET_AUTH:
+            return {
+                ...state,
+                auth: data
+            };
+
         case TYPES.USER_SET_IS_LOGGED_IN:
             return {
                 ...state,
