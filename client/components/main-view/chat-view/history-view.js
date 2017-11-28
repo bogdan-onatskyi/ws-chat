@@ -1,16 +1,6 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
-import cn from 'classnames';
-
-import Glyphicon from 'react-bootstrap/es/Glyphicon';
-
-import FormGroup from 'react-bootstrap/es/FormGroup';
-import InputGroup from 'react-bootstrap/es/InputGroup';
-import FormControl from 'react-bootstrap/es/FormControl';
-import Button from 'react-bootstrap/es/Button';
-
-// import {setIsLoggedIn, setUserName, setPassword} from '../../actions/user-actions';
 
 import './history-view.scss';
 

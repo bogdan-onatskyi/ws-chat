@@ -1,20 +1,20 @@
 import * as TYPES from './types';
 
-export function setOnlineUsersList(data) {
+export function _setOnlineUsersList(data) {
     return {
         type: TYPES.USERSLIST_SET_ONLINE_LIST,
         data
     };
 }
 
-export function setBannedUsersList(data) {
+export function _setBannedUsersList(data) {
     return {
         type: TYPES.USERSLIST_SET_BANNED_LIST,
         data
     };
 }
 
-export function clearUsersList(data) {
+export function _clearUsersList(data) {
     return {
         type: TYPES.USERSLIST_CLEAR_LIST,
         data

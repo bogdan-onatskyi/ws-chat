@@ -1,40 +1,40 @@
 import * as TYPES from './types';
 
-export function setUserInfo(data) {
+export function _setUserInfo(data) {
     return {
         type: TYPES.CHAT_SET_USER_INFO,
         data
     };
 }
 
-export function addPostToHistory(data) {
+export function _addPostToHistory(data) {
     return {
         type: TYPES.CHAT_ADD_POST_TO_HISTORY,
         data
     };
 }
 
-export function clearHistory() {
+export function _clearHistory() {
     return {
         type: TYPES.CHAT_CLEAR_HISTORY,
     };
 }
 
-export function setMessage(data) {
+export function _setMessage(data) {
     return {
         type: TYPES.CHAT_SET_MESSAGE,
         data
     };
 }
 
-export function setCanISendMessage(data) {
+export function _setCanISendMessage(data) {
     return {
         type: TYPES.CHAT_SET_CAN_I_SEND_MESSAGE,
         data
     };
 }
 
-export function setSendMessageCountdown(data) {
+export function _setSendMessageCountdown(data) {
     return {
         type: TYPES.CHAT_SET_SEND_MESSAGE_COUNTDOWN,
         data

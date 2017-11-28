@@ -1,48 +1,48 @@
 import * as TYPES from './types';
 
-export function setAuth(data) {
+export function _setAuth(data) {
     return {
         type: TYPES.USER_SET_AUTH,
         data
     };
 }
 
-export function setIsLoggedIn(data) {
+export function _setIsLoggedIn(data) {
     return {
         type: TYPES.USER_SET_IS_LOGGED_IN,
         data
     };
 }
 
-export function setUserName(data) {
+export function _setUserName(data) {
     return {
         type: TYPES.USER_SET_USERNAME,
         data
     };
 }
 
-export function setPassword(data) {
+export function _setPassword(data) {
     return {
         type: TYPES.USER_SET_PASSWORD,
         data
     };
 }
 
-export function setToken(data) {
+export function _setToken(data) {
     return {
         type: TYPES.USER_SET_TOKEN,
         data
     };
 }
 
-export function setIsMuted(data) {
+export function _setIsMuted(data) {
     return {
         type: TYPES.USER_SET_IS_MUTED,
         data
     };
 }
 
-export function setIsBanned(data) {
+export function _setIsBanned(data) {
     return {
         type: TYPES.USER_SET_IS_BANNED,
         data

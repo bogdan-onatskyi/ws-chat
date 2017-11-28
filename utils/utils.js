@@ -11,5 +11,5 @@ exports.toString = (comment, data) => {
 };
 
 exports.generateToken = () => {
-    return 'fake token';
+    return uuid.v4();
 };

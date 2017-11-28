@@ -23,12 +23,12 @@ class UsersListView extends Component {
         if (this.props.isAdmin) {
             const {onlineUsersList, bannedUsersList, handleIsMuted} = this.props;
 
-            const {userName, isMuted} =
+            const {userName, isAdmin, isMuted} =
                 onlineIndex === null
                     ? bannedUsersList[bannedIndex]
                     : onlineUsersList[onlineIndex];
 
-            handleIsMuted(userName, !isMuted);
+            if (!isAdmin) handleIsMuted(userName, !isMuted);
         }
     };
 
@@ -36,12 +36,12 @@ class UsersListView extends Component {
         if (this.props.isAdmin) {
             const {onlineUsersList, bannedUsersList, handleIsBanned} = this.props;
 
-            const {userName, isBanned} =
+            const {userName, isAdmin, isBanned} =
                 onlineIndex === null
                     ? bannedUsersList[bannedIndex]
                     : onlineUsersList[onlineIndex];
 
-            handleIsBanned(userName, !isBanned);
+            if (!isAdmin) handleIsBanned(userName, !isBanned);
         }
     };
 
@@ -50,6 +50,18 @@ class UsersListView extends Component {
         const text = isOnline ? "Online" : "Banned";
         const {isAdmin, onlineUsersList, bannedUsersList} = this.props;
         const usersList = isOnline ? onlineUsersList : bannedUsersList;
+
+        const handleSetIsMuted = index => {
+            isOnline
+                ? this.setIsMuted(index, null)
+                : this.setIsMuted(null, index);
+        };
+
+        const handleSetIsBanned = index => {
+            isOnline
+                ? this.setIsBanned(index, null)
+                : this.setIsBanned(null, index);
+        };
 
         return (
             <div>
@@ -62,12 +74,12 @@ class UsersListView extends Component {
                             <div className={cn("chat-view__users-list--user",
                                 {"chat-view__users-list--user-editable": isAdmin})}>
 
-                                {isAdmin && <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
-                                                       glyph={isMuted ? "volume-off" : "volume-down"}
-                                                       onClick={this.setIsMuted.bind(this, index, null)}/>}
-                                {isAdmin && <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
-                                                       glyph={isBanned ? "remove" : "ok"}
-                                                       onClick={this.setIsBanned.bind(this, index, null)}/>}
+                                <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
+                                           glyph={isMuted ? "volume-off" : "volume-down"}
+                                           onClick={handleSetIsMuted.bind(this, index)}/>
+                                <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
+                                           glyph={isBanned ? "remove" : "ok"}
+                                           onClick={handleSetIsBanned.bind(this, index)}/>
                                 {userName}
                             </div>
                         </div>
@@ -78,14 +90,13 @@ class UsersListView extends Component {
     };
 
     render() {
-        const {isAdmin} = this.props;
         return (
             <Col xs={3} className="chat-view__users-list">
                 <h4><strong>Online users:</strong></h4>
                 {this.renderUsersList(true)}
 
-                {isAdmin && <h4><strong>Banned users:</strong></h4>}
-                {isAdmin && this.renderUsersList(false)}
+                <h4><strong>Banned users:</strong></h4>
+                {this.renderUsersList(false)}
             </Col>
         );
     }
@@ -93,7 +104,6 @@ class UsersListView extends Component {
 
 function mapStateToProps(state) {
     return {
-        // usersList: state.usersList.usersList,
         onlineUsersList: state.usersList.onlineUsersList,
         bannedUsersList: state.usersList.bannedUsersList,
     };

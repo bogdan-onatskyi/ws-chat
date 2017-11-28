@@ -11,8 +11,31 @@ const uuid = require('uuid');
 
 const bodyParser = require('body-parser');
 
-const {toString, generateToken} = require('../utils/utils');
-const Users = require('./users').Users;
+const {toString} = require('../utils/utils');
+
+const generateToken = () => {
+    return uuid.v4();
+};
+
+const mongoose = require("mongoose");
+mongoose.Promise = global.Promise;
+const userSchema = mongoose.Schema({
+    userName: String,
+    password: String,
+    token: String,
+
+    isAdmin: Boolean,
+    isBanned: Boolean,
+    isMuted: Boolean,
+
+    color: String
+});
+mongoose.connect('mongodb://localhost:27017/chat', {
+    useMongoClient: true,
+});
+const db = mongoose.connection;
+const User = mongoose.model("User", userSchema);
+
 let loggedUsersArray = [];
 
 // We need the same instance of the session parser in express and  WebSocket server.
@@ -53,6 +76,7 @@ app.use(bodyParser.json());
 
 app.post('/login', (request, response) => {
     const requestData = request.body;
+    const {userName, password} = requestData;
 
     console.log('');
     console.log(toString('You posted:', requestData));
@@ -62,60 +86,66 @@ app.post('/login', (request, response) => {
         auth: 'Access denied'
     };
 
-    // todo db
-    Users.forEach(user => {
-        if (requestData.userName === user.userName && requestData.password === user.password) {
+    User.findOne({userName, password})
+        .then(user => {
+            if (!user) { // todo создание СРАЗУ нового пользователя
+                return User.create(
+                    {
+                        userName,
+                        password,
+                        isAdmin: false,
+                        isBanned: false,
+                        isMuted: false,
+                        color: 'green',
+                        token: generateToken(),
+                        auth: 'ok'
+                    })
+                    .then(user => {
+                        console.log(` = ${user.userName}`);
+                        return user;
+                    })
+                    .catch(err => {
+                        console.log(`Error: ${err}`);
+                    });
 
-            responseData = user.isBanned
-                ? {
-                    auth: 'Access denied: you are banned by admin.' // todo что делать с session
-                }
-                : {
-                    userName: user.userName,
-                    isAdmin: user.isAdmin,
-                    isBanned: user.isBanned,
-                    isMuted: user.isMuted,
-                    color: user.color,
-                    token: user.token,
-                    auth: 'ok'
-                };
-        }
-    });
+            } else
+                return user;
+        })
+        .then(user => {
+            const {isAdmin, isBanned, isMuted, color, token} = user;
 
-    if (responseData.auth === 'Access denied') { // todo создание сразу нового пользователя
-        responseData = {
-            userName: requestData.userName,
-            password: requestData.password,
-            isAdmin: false,
-            isBanned: false,
-            isMuted: false,
-            color: 'green',
-            token: generateToken(),
-            auth: 'ok'
-        };
+            responseData = {
+                userName,
+                password,
+                isAdmin,
+                isBanned,
+                isMuted,
+                color,
+                token,
+                auth: 'ok'
+            };
 
-        // todo db
-        const {userName, isAdmin, isBanned, isMuted, color, token} = responseData;
+            const id = uuid.v4();
+            console.log(`Updating session for user ${id}`);
 
-        Users.push({userName, isAdmin, isBanned, isMuted, color, token})
-    }
+            request.session.userId = id;
+            request.session.token = responseData.token;
 
-    // "Log in" user and set userId to session.
-    const id = uuid.v4();
+            response.setHeader('Content-Type', 'application/json');
+            response.send(JSON.stringify(responseData));
 
-    console.log(`Updating session for user ${id}`);
-    request.session.userId = id;
-    request.session.token = responseData.token;
-
-    response.setHeader('Content-Type', 'application/json');
-    response.send(JSON.stringify(responseData));
-
-    console.log(toString('Server answered:', responseData));
+            console.log(toString('Server answered:', responseData));
+        })
+        .catch(err => {
+            console.log(`Error: ${err}`);
+        });
 });
 
 app.delete('/logout', (request, response) => { // todo На выход из чата
     console.log('Destroying session');
+
     request.session.destroy();
+
     response.send({result: 'OK', message: 'Session destroyed'});
 });
 
@@ -126,7 +156,6 @@ app.all("/", (request, response) => {
 app.listen(PORT, () => {
     console.log(`App server is listening on port ${PORT}...`);
 });
-
 
 // Websocket server
 
@@ -142,41 +171,67 @@ const server = http.createServer((request, response) => {
 const wss = new WebSocket.Server({
     verifyClient: (info, done) => {
 
-        console.log('Parsing session from request...');
         sessionParser(info.req, {}, () => {
-            console.log('Session is parsed!');
 
             // We can reject the connection by returning false to done().
             // For example, reject here if user is unknown.
 
             const token = info.req.session.token;
 
-            if (token === '' || token === 'fake token')
-            {
-                console.log('Websocket refused your connection...');
-                done(false, 401, 'Websocket refused your connection...');
-            }
-            else
-            {
-                console.log(`info.req.session.token`);
-                done(info.req.session.token);
-            }
+            User.findOne({token})
+                .then(user => {
+                    if (user) {
+                        done(info.req.session.token);
+                    } else {
+                        console.log('Websocket refused your connection...');
+                        done(false, 401, 'Websocket refused your connection...'); // todo Не работает
+                    }
+                })
+                .catch(err => {
+                    console.log(`Error: ${err}`);
+                });
         });
     },
     server
 });
 
 wss.on('connection', (ws, request) => {
+
+    let connectionName = ''; // connectionName === userName
+
+    const sendResponseBroadcast = responseObject => {
+        wss.clients.forEach(client => {
+            // if (client !== ws && client.readyState === WebSocket.OPEN) {
+            if (client.readyState === WebSocket.OPEN) {
+                const message = JSON.stringify(responseObject);
+
+                client.send(message);
+
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`sent chat message: ${message}`);
+                }
+            }
+        });
+    };
+
+    const userExit = (ws) => {
+        const userName = connectionName;
+
+        loggedUsersArray = loggedUsersArray.filter(user => user.ws !== ws);
+
+        const responseObject = {
+            timeStamp: Date.now(),
+            userName,
+            type: 'responseUserExit',
+            message: `Chat message: ${userName} left chat...`
+        };
+
+        ws.close();
+
+        sendResponseBroadcast(responseObject);
+    };
+
     ws.on('message', (message) => {
-        //
-        // Here we can now use session parameters.
-        //
-        console.log(`WS message ${message} from user ${request.session.userId}, token=${request.session.token}`);
-
-        // Users.forEach(user => {
-        //     console.log(`userName = ${user.userName}, token = ${user.token}`);
-        // });
-
         if (process.env.NODE_ENV === 'development') {
             console.log(`Received chat message: ${message} from user ${request.session.userId}, token=${request.session.token}`);
         }
@@ -189,154 +244,191 @@ wss.on('connection', (ws, request) => {
             return;
         }
 
-        let user = {};
-        const timeStamp = (new Date()).getTime();
-        const userName = requestObject.userName;
+        const {userName} = requestObject;
 
-        let responseObject = {
-            timeStamp,
-            userName
+        const sendResponse = responseObject => {
+            if (ws.readyState === WebSocket.OPEN) {
+                const message = JSON.stringify(responseObject);
+
+                ws.send(message);
+
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`sent chat message: ${message}`);
+                }
+            }
         };
 
         const getUserInfo = () => {
-            user = Users.find(user => user.userName === userName);
-            if (user === undefined) {
-                console.log(`getUserInfo: User ${userName} didn't find.`);
-                return;
-            }
+            User.findOne({userName})
+                .then(user => {
+                    const responseObject = {
+                        timeStamp: Date.now(),
+                        userName,
+                        type: 'responseGetUserInfo',
+                        data: user
+                    };
 
-            responseObject = {
-                ...responseObject,
-                type: 'responseGetUserInfo',
-                data: user
-            };
+                    sendResponse(responseObject);
 
-            ws.send(JSON.stringify(responseObject));
+                    connectionName = userName;
+                })
+                .catch(err => {
+                    console.log(err);
+                });
         };
 
         const getOnlineUsersList = () => {
+            User.find({})
+                .then(users => {
+                    loggedUsersArray.forEach(loggedUser => {
+                        users.forEach(user => {
+                            if (loggedUser.userName === user.userName) {
 
-            loggedUsersArray.forEach(loggedUser => {
-                Users.forEach(user => {
-                    if (loggedUser.userName === user.userName) {
-                        const {isBanned, isMuted, color} = user;
+                                loggedUser.isBanned = user.isBanned;
+                                loggedUser.isMuted = user.isMuted;
+                                loggedUser.color = user.color;
+                            }
+                        });
+                    });
 
-                        loggedUser.isBanned = isBanned;
-                        loggedUser.isMuted = isMuted;
-                        loggedUser.color = color;
-                    }
+                    const array = loggedUsersArray.map(user => {
+                        const {userName, isAdmin, isBanned, isMuted, color} = user;
+                        return {userName, isAdmin, isBanned, isMuted, color};
+                    });
+
+                    array.sort((a, b) => {
+                        if (a.userName > b.userName) return 1;
+                        if (a.userName < b.userName) return -1;
+                    });
+
+                    const responseObject = {
+                        timeStamp: Date.now(),
+                        userName,
+                        type: 'responseGetOnlineUsersList',
+                        data: array
+                    };
+
+                    sendResponse(responseObject);
+                })
+                .catch(err => {
+                    console.log(err);
                 });
-            });
-
-            const array = loggedUsersArray.map(user => {
-                const {userName, isAdmin, isBanned, isMuted, color} = user;
-                return {userName, isAdmin, isBanned, isMuted, color};
-            });
-
-            array.sort((a, b) => {
-                if (a.userName > b.userName) return 1;
-                if (a.userName < b.userName) return -1;
-            });
-
-            responseObject = {
-                ...responseObject,
-                type: 'responseGetOnlineUsersList',
-                data: array
-            };
         };
 
         const getBannedUsersList = () => {
-            const array = [];
+            User.find({isBanned: true})
+                .then(users => {
+                    const array = [];
 
-            Users.forEach(user => {
-                if (user.isBanned) {
-                    const {userName, isAdmin, isBanned, isMuted, color} = user;
-
-                    array.push({
-                        userName, isAdmin, isBanned, isMuted, color
+                    users.forEach(user => {
+                        const {userName, isAdmin, isBanned, isMuted, color} = user;
+                        array.push({
+                            userName, isAdmin, isBanned, isMuted, color
+                        });
                     });
-                }
-            });
 
-            array.sort((a, b) => {
-                if (a.userName > b.userName) return 1;
-                if (a.userName < b.userName) return -1;
-            });
+                    array.sort((a, b) => {
+                        if (a.userName > b.userName) return 1;
+                        if (a.userName < b.userName) return -1;
+                    });
 
-            responseObject = {
-                ...responseObject,
-                type: 'responseGetBannedUsersList',
-                data: array
-            };
+                    const responseObject = {
+                        timeStamp: Date.now(),
+                        userName,
+                        type: 'responseGetBannedUsersList',
+                        data: array
+                    };
+
+                    sendResponse(responseObject);
+                })
+                .catch(err => {
+                    console.log(err);
+                });
         };
 
         const newUser = () => {
-            responseObject = {
-                ...responseObject,
-                type: 'responseNewUser',
-                message: `Chat message: ${userName} logged in chat...`
-            };
+            User.findOne({userName})
+                .then(user => {
+                    const {isAdmin, isBanned, isMuted, color} = user;
 
-            user = Users.find(user => user.userName === userName);
-            if (user === undefined) {
-                console.log(`newUser: User ${userName} didn't find.`);
-                return;
-            }
+                    loggedUsersArray.push({
+                        userName, isAdmin, isBanned, isMuted, color,
+                        ws
+                    });
 
-            const {isAdmin, isBanned, isMuted, color} = user;
-            loggedUsersArray.push({
-                userName, isAdmin, isBanned, isMuted, color,
-                ws
-            });
+                    const responseObject = {
+                        timeStamp: Date.now(),
+                        userName,
+                        type: 'responseNewUser',
+                        message: `Chat message: ${userName} logged in chat...`
+                    };
+
+                    sendResponseBroadcast(responseObject);
+                })
+                .catch(err => {
+                    console.log(err);
+                });
         };
 
         const newMessage = () => {
-            responseObject = {
-                ...responseObject,
+            const responseObject = {
+                timeStamp: Date.now(),
+                userName,
                 type: 'responseNewMessage',
                 message: requestObject.message
             };
-        };
 
-        const userExit = () => {
-            responseObject = {
-                ...responseObject,
-                type: 'responseUserExit',
-                message: `Chat message: ${userName} left chat...`
-            };
-
-            loggedUsersArray = loggedUsersArray.filter(user => user.ws !== ws);
-            ws.close();
+            sendResponseBroadcast(responseObject);
         };
 
         const setIsMuted = () => {
-            const text = requestObject.isMuted ? '' : 'un';
-            responseObject = {
-                ...responseObject,
-                type: 'responseSetIsMuted',
-                message: `Chat message: ${userName} is ${text}muted...`
-            };
-
-            Users.forEach(user => {
-                if (user.userName === requestObject.userName) {
+            User.findOne({userName})
+                .then(user => {
                     user.isMuted = requestObject.isMuted;
-                }
-            });
+                    user.save()
+                        .then(saved => {
+                            const text = requestObject.isMuted ? '' : 'un';
+                            const responseObject = {
+                                timeStamp: Date.now(),
+                                userName,
+                                type: 'responseSetIsMuted',
+                                message: `Chat message: ${userName} is ${text}muted...`
+                            };
+
+                            sendResponseBroadcast(responseObject);
+                        })
+                        .catch(err => {
+                            console.log(err);
+                        });
+                })
+                .catch(err => {
+                    console.log(err);
+                });
         };
 
-        const setIsBanned = () => { // todo неправильно работает
-            const text = requestObject.isBanned ? '' : 'un';
-            responseObject = {
-                ...responseObject,
-                type: 'responseSetIsBanned',
-                message: `Chat message: ${userName} is ${text}banned...`
-            };
-
-            Users.forEach(user => {
-                if (user.userName === requestObject.userName) {
+        const setIsBanned = () => {
+            User.findOne({userName})
+                .then(user => {
                     user.isBanned = requestObject.isBanned;
-                }
-            });
+                    user.save()
+                        .then(saved => {
+                            const text = requestObject.isBanned ? '' : 'un';
+                            const responseObject = {
+                                timeStamp: Date.now(),
+                                userName,
+                                type: 'responseSetIsBanned',
+                                message: `Chat message: ${userName} is ${text}banned...`
+                            };
+
+                            sendResponseBroadcast(responseObject);
+                        })
+                        .catch(err => {
+                            console.log(err);
+                        });
+                })
+                .catch(err => {
+                    console.log(err);
+                });
         };
 
         switch (requestObject.type) {
@@ -346,55 +438,41 @@ wss.on('connection', (ws, request) => {
 
             case 'getOnlineUsersList':
                 getOnlineUsersList();
-                break;
+                return;
 
             case 'getBannedUsersList':
                 getBannedUsersList();
-                break;
+                return;
 
             case 'newUser':
                 newUser();
-                break;
+                return;
 
             case 'newMessage':
                 newMessage();
-                break;
+                return;
 
             case 'userExit':
-                userExit();
-                break;
+                userExit(ws);
+                return;
 
             case 'setIsMuted':
                 setIsMuted();
-                break;
+                return;
 
             case 'setIsBanned':
                 setIsBanned();
-                break;
+                return;
 
             default:
                 return;
         }
-
-        // Broadcast message to all connected Users
-        wss.clients.forEach(client => {
-            // if (client !== ws && client.readyState === WebSocket.OPEN) {
-            if (client.readyState === WebSocket.OPEN) {
-                const sendMessage = JSON.stringify(responseObject);
-
-                client.send(sendMessage);
-
-                if (process.env.NODE_ENV === 'development') {
-                    console.log(`sent chat message: ${sendMessage}`);
-                }
-            }
-        });
     });
 
     ws.on('close', () => {
+        userExit(ws);
         console.log('disconnected');
     });
-
 });
 
 server.listen(8080, () => console.log('Websocket server is listening on http://localhost:8080'));

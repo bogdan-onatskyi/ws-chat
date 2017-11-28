@@ -64,7 +64,14 @@ export default function (state = initialState, action) {
         case TYPES.CHAT_SET_USER_INFO:
             return {
                 ...state,
-                ...data
+                userName: data.userName,
+                password: data.password,
+                token: data.token,
+
+                isAdmin: data.isAdmin,
+                isBanned: data.isBanned,
+                isMuted: data.isMuted,
+                color: data.color,
             };
 
         default:
