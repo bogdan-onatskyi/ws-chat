@@ -1,13 +1,36 @@
-@import "../../../entry-point/variables";
-
 .chat-view {
     display: flex;
     flex: 1 1 auto;
-
+    user-select: none;
     &__chat {
         flex: 1 1 auto;
         background-color: lightgray;
+        &--title {
+            font-size: larger;
+            font-weight: 600;
+            text-align: center;
+            margin: 10px auto;
+        }
+        &--history {
+            margin-bottom: 10px;
+            &-text {
+                user-select: text;
+                &-timestamp {
+                    user-select: none;
+                    font-size: 10px;
+                    color: gray;
+                    margin-right: 5px;
+                }
+                &-username {
+                    margin-right: 5px;
+                    font-weight: 700;
+                    font-style: italic;
+                }
+                &-message {
 
+                }
+            }
+        }
         &--exit-button {
             display: block !important;
             margin: 0 auto;
@@ -16,7 +39,12 @@
     &__users-list {
         flex: 1 1 auto;
         background-color: gray;
-        user-select: none;
+        &--title {
+            font-size: larger;
+            font-weight: 500;
+            text-align: center;
+            margin: 5px auto;
+        }
         &--user {
             padding: 0 5px !important;
             &-editable {
@@ -24,6 +52,17 @@
                 &:hover {
                     background-color: lightgray;
                 }
+            }
+            &-glyph {
+                &-muted {
+
+                }
+                &-banned {
+
+                }
+            }
+            &-name {
+                margin-left: 5px;
             }
         }
     }

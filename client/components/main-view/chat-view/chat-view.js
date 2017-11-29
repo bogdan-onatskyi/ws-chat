@@ -292,7 +292,7 @@ class ChatView extends Component {
 
         return (
             <Col xs={9} className="chat-view__chat">
-                <h4><strong>{serverURL}</strong></h4>
+                <p className="chat-view__chat--title">{serverURL}</p>
 
                 <form name="chatForm" onSubmit={this.handleSendMessage}>
                     <HistoryView history={history}/>

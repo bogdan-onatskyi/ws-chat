@@ -71,16 +71,18 @@ class UsersListView extends Component {
                         <div key={`${text}-user-${index}`}
                              className={cn("chat-view__users-list--user",
                                  {"chat-view__users-list--user-editable": isAdmin})}>
-                            <div className={cn("chat-view__users-list--user",
+                            <div className={cn("users-list__user",
                                 {"chat-view__users-list--user-editable": isAdmin})}>
 
-                                <Glyphicon className={cn("post", {"post__isMuted": isMuted})}
+                                <Glyphicon className={cn("chat-view__users-list--user-glyph",
+                                    {"chat-view__users-list--user-glyph-muted": isMuted})}
                                            glyph={isMuted ? "volume-off" : "volume-down"}
                                            onClick={handleSetIsMuted.bind(this, index)}/>
-                                <Glyphicon className={cn("post", {"post__isBanned": isBanned})}
+                                <Glyphicon className={cn("chat-view__users-list--user-glyph",
+                                    {"chat-view__users-list--user-glyph-banned": isBanned})}
                                            glyph={isBanned ? "remove" : "ok"}
                                            onClick={handleSetIsBanned.bind(this, index)}/>
-                                {userName}
+                                <span className="chat-view__users-list--user-name">{userName}</span>
                             </div>
                         </div>
                     );
@@ -92,10 +94,10 @@ class UsersListView extends Component {
     render() {
         return (
             <Col xs={3} className="chat-view__users-list">
-                <h4><strong>Online users:</strong></h4>
+                <p className="chat-view__users-list--title">Online users:</p>
                 {this.renderUsersList(true)}
 
-                <h4><strong>Banned users:</strong></h4>
+                <p className="chat-view__users-list--title">Banned users:</p>
                 {this.renderUsersList(false)}
             </Col>
         );

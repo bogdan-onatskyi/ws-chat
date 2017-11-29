@@ -75,7 +75,7 @@ class MainView extends Component {
     getValidationState = () => {
         const {userName} = this.props.user;
 
-        if (userName.length < 3) return 'error';
+        if (userName.length < 3 || userName.match(/\W/ig)) return 'error';
 
         return null;
     };
@@ -93,7 +93,7 @@ class MainView extends Component {
                                          onChange={this.handleChangeUserName}/>
                         </FormGroup>
 
-                        <FormControl type="text" name="password" value={password}
+                        <FormControl type="password" name="password" value={password}
                                      onChange={this.handleChangePassword}/>
                         <Button bsStyle="primary" type="submit">Login</Button>
                     </InputGroup>

@@ -2,8 +2,6 @@ import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 
-import './history-view.scss';
-
 const addZero = (num, digit = 2) => {
     let retStr = '';
 
@@ -23,7 +21,7 @@ class HistoryView extends Component {
         const {history} = this.props;
 
         return (
-            <div className="history">
+            <div className="chat-view__chat--history">
                 {history.map((post, index) => {
                     const {type, timeStamp, userName, color, message} = post;
                     const date = new Date(timeStamp);
@@ -32,15 +30,12 @@ class HistoryView extends Component {
                         ${addZero(date.getHours())}:${addZero(date.getMinutes())}:${addZero(date.getSeconds())}`;
 
                     return (
-                        <div key={`post_${index}`}>
-                            <span className="post post__timeStamp">{dateStr}</span>
-                            {type === 'responseNewMessage'
-                                ? <span>
-                                    <span className="post post__userName"><strong><em>{userName}:</em></strong></span>
-                                </span>
-                                : <span/>
+                        <div className="chat-view__chat--history-text" key={`post_${index}`}>
+                            <span className="chat-view__chat--history-text-timestamp">{dateStr}</span>
+                            {type === 'responseNewMessage' &&
+                                <span className="chat-view__chat--history-text-username">{userName}:</span>
                             }
-                            <span className="post post__message">{message}</span>
+                            <span className="chat-view__chat--history-text-message">{message}</span>
                         </div>
                     );
                 })}
@@ -54,9 +49,11 @@ function mapStateToProps(state) {
         history: state.chat.history
     };
 }
+
 function mapDispatchToProps(dispatch) {
     return {
         // setPassword: password => dispatch(setPassword(password)),
     };
 }
+
 export default connect(mapStateToProps, mapDispatchToProps)(HistoryView);
