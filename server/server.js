@@ -38,6 +38,12 @@ const User = mongoose.model("User", userSchema);
 
 let loggedUsersArray = [];
 
+adminColor = '#8A1631';
+const userColors = [
+    '#A6206C', '#167764', '#0B4571', '#49296A', '#4E2114', '#444247'
+];
+const getUserColor = () => userColors[Math.random() * userColors.length ^ 0];
+
 // We need the same instance of the session parser in express and  WebSocket server.
 const sessionParser = session({
     saveUninitialized: false,
@@ -96,7 +102,7 @@ app.post('/login', (request, response) => {
                         isAdmin: false,
                         isBanned: false,
                         isMuted: false,
-                        color: 'green',
+                        color: getUserColor(),
                         token: generateToken(),
                         auth: 'ok'
                     })
@@ -372,9 +378,10 @@ wss.on('connection', (ws, request) => {
 
         const newMessage = () => {
             const responseObject = {
-                timeStamp: Date.now(),
-                userName,
                 type: 'responseNewMessage',
+                timeStamp: Date.now(),
+                color: requestObject.color,
+                userName,
                 message: requestObject.message
             };
 

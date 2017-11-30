@@ -66,24 +66,23 @@ class UsersListView extends Component {
         return (
             <div>
                 {usersList.map((user, index) => {
-                    const {userName, isMuted, isBanned} = user;
-                    return (
-                        <div key={`${text}-user-${index}`}
-                             className={cn("chat-view__users-list--user",
-                                 {"chat-view__users-list--user-editable": isAdmin})}>
-                            <div className={cn("users-list__user",
-                                {"chat-view__users-list--user-editable": isAdmin})}>
+                    const {userName, isMuted, isBanned, color} = user;
+                    const userStyle = {color};
 
-                                <Glyphicon className={cn("chat-view__users-list--user-glyph",
-                                    {"chat-view__users-list--user-glyph-muted": isMuted})}
-                                           glyph={isMuted ? "volume-off" : "volume-down"}
-                                           onClick={handleSetIsMuted.bind(this, index)}/>
-                                <Glyphicon className={cn("chat-view__users-list--user-glyph",
-                                    {"chat-view__users-list--user-glyph-banned": isBanned})}
-                                           glyph={isBanned ? "remove" : "ok"}
-                                           onClick={handleSetIsBanned.bind(this, index)}/>
-                                <span className="chat-view__users-list--user-name">{userName}</span>
-                            </div>
+                    return (
+                        <div className={cn("chat-view__users-list--user",
+                            {"chat-view__users-list--user-editable": isAdmin})}
+                             key={`${text}-user-${index}`}
+                             style={userStyle}>
+                            <Glyphicon className={cn("chat-view__users-list--user-glyph",
+                                {"chat-view__users-list--user-glyph-muted": isMuted})}
+                                       glyph={isMuted ? "volume-off" : "volume-down"}
+                                       onClick={handleSetIsMuted.bind(this, index)}/>
+                            <Glyphicon className={cn("chat-view__users-list--user-glyph",
+                                {"chat-view__users-list--user-glyph-banned": isBanned})}
+                                       glyph={isBanned ? "remove" : "ok"}
+                                       onClick={handleSetIsBanned.bind(this, index)}/>
+                            <span className="chat-view__users-list--user-name">{userName}</span>
                         </div>
                     );
                 })}
@@ -92,6 +91,10 @@ class UsersListView extends Component {
     };
 
     render() {
+        const colors = [
+            '#8A1631', '#A6206C', '#167764', '#0B4571', '#49296A', '#4E2114', '#444247'
+        ];
+
         return (
             <Col xs={3} className="chat-view__users-list">
                 <p className="chat-view__users-list--title">Online users:</p>
@@ -99,6 +102,10 @@ class UsersListView extends Component {
 
                 <p className="chat-view__users-list--title">Banned users:</p>
                 {this.renderUsersList(false)}
+
+                {colors.map((backgroundColor, index) => (
+                    <div style={{backgroundColor}}>{index}</div>
+                ))}
             </Col>
         );
     }

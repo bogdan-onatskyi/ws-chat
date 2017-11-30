@@ -59,7 +59,7 @@ class ChatView extends Component {
             this.socket.send(JSON.stringify(requestObject));
         };
 
-        const getUserInfo  = () => {
+        const getUserInfo = () => {
             const {userName, token} = this.props.user;
             const requestObject = {
                 type: 'getUserInfo',
@@ -230,7 +230,7 @@ class ChatView extends Component {
             setMessage, setCanISendMessage, setSendMessageCountdown
         } = this.props;
 
-        const {userName} = user;
+        const {userName, color} = user;
 
         if (canISendMessage) {
             if (message !== '') {
@@ -239,6 +239,7 @@ class ChatView extends Component {
                 const requestObject = {
                     type: 'newMessage',
                     userName,
+                    color,
                     message
                 };
 

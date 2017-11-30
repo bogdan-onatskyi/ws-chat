@@ -25,6 +25,7 @@ class HistoryView extends Component {
                 {history.map((post, index) => {
                     const {type, timeStamp, userName, color, message} = post;
                     const date = new Date(timeStamp);
+                    const msgStyle = {color};
                     const dateStr =
                         `${addZero(date.getDate())}.${addZero(date.getMonth())}.${date.getFullYear()} \
                         ${addZero(date.getHours())}:${addZero(date.getMinutes())}:${addZero(date.getSeconds())}`;
@@ -32,10 +33,12 @@ class HistoryView extends Component {
                     return (
                         <div className="chat-view__chat--history-text" key={`post_${index}`}>
                             <span className="chat-view__chat--history-text-timestamp">{dateStr}</span>
-                            {type === 'responseNewMessage' &&
-                                <span className="chat-view__chat--history-text-username">{userName}:</span>
-                            }
-                            <span className="chat-view__chat--history-text-message">{message}</span>
+                            <span className="chat-view__chat--history-text-message" style={msgStyle}>
+                                {type === 'responseNewMessage' &&
+                                    <span className="chat-view__chat--history-text-message-username">{userName}:</span>
+                                }
+                                <span>{message}</span>
+                            </span>
                         </div>
                     );
                 })}

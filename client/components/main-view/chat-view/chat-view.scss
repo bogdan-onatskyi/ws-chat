@@ -21,13 +21,12 @@
                     color: gray;
                     margin-right: 5px;
                 }
-                &-username {
-                    margin-right: 5px;
-                    font-weight: 700;
-                    font-style: italic;
-                }
                 &-message {
-
+                    &-username {
+                        margin-right: 5px;
+                        font-weight: 700;
+                        font-style: italic;
+                    }
                 }
             }
         }
