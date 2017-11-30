@@ -122,7 +122,6 @@ class ChatView extends Component {
                 return;
             }
 
-            console.log(`receivedObject.type = ${receivedObject.type}`);
             switch (receivedObject.type) {
                 case 'responseGetUserInfo':
                     setUserInfo(receivedObject.data);
@@ -201,7 +200,6 @@ class ChatView extends Component {
     };
 
     handleIsMuted = (userName, isMuted) => {
-        console.log(`214: userName = ${userName}, isMuted = ${isMuted}`);
         const requestObject = {
             type: 'setIsMuted',
             userName,
@@ -212,7 +210,6 @@ class ChatView extends Component {
     };
 
     handleIsBanned = (userName, isBanned) => {
-        console.log(`224: userName = ${userName}, isBanned = ${isBanned}`);
         const requestObject = {
             type: 'setIsBanned',
             userName,

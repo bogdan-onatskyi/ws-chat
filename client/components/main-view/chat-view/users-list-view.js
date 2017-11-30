@@ -91,10 +91,6 @@ class UsersListView extends Component {
     };
 
     render() {
-        const colors = [
-            '#8A1631', '#A6206C', '#167764', '#0B4571', '#49296A', '#4E2114', '#444247'
-        ];
-
         return (
             <Col xs={3} className="chat-view__users-list">
                 <p className="chat-view__users-list--title">Online users:</p>
@@ -102,10 +98,6 @@ class UsersListView extends Component {
 
                 <p className="chat-view__users-list--title">Banned users:</p>
                 {this.renderUsersList(false)}
-
-                {colors.map((backgroundColor, index) => (
-                    <div style={{backgroundColor}}>{index}</div>
-                ))}
             </Col>
         );
     }

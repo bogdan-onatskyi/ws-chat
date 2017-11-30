@@ -13,7 +13,7 @@
         }
         &--history {
             margin-bottom: 10px;
-            &-text {
+            &--text {
                 user-select: text;
                 &-timestamp {
                     user-select: none;
@@ -22,9 +22,16 @@
                     margin-right: 5px;
                 }
                 &-message {
-                    &-username {
+                    &--username {
                         margin-right: 5px;
                         font-weight: 700;
+                        font-style: italic;
+                    }
+                    &--user-message {
+
+                    }
+                    &--server-message {
+                        font-size: 12px;
                         font-style: italic;
                     }
                 }
@@ -37,7 +44,7 @@
     }
     &__users-list {
         flex: 1 1 auto;
-        background-color: gray;
+        background-color: lightsteelblue;
         &--title {
             font-size: larger;
             font-weight: 500;

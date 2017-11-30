@@ -52,6 +52,10 @@ class MainView extends Component {
 
                             setUserName(data.userName);
 
+                            setTimeout(() => {
+                                this.props.setAuth('');
+                            }, 5000);
+
                             return data;
                         })
                         .catch(error => {
@@ -97,7 +101,7 @@ class MainView extends Component {
                                      onChange={this.handleChangePassword}/>
                         <Button bsStyle="primary" type="submit">Login</Button>
                     </InputGroup>
-                    <p>{authMessage}</p>
+                    <p className="main__loginForm--auth">{authMessage}</p>
                 </FormGroup>
             </form>
         );

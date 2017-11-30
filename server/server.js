@@ -107,7 +107,6 @@ app.post('/login', (request, response) => {
                         auth: 'ok'
                     })
                     .then(user => {
-                        console.log(` = ${user.userName}`);
                         return user;
                     })
                     .catch(err => {
@@ -120,16 +119,17 @@ app.post('/login', (request, response) => {
         .then(user => {
             const {isAdmin, isBanned, isMuted, color, token} = user;
 
-            responseData = {
-                userName,
-                password,
-                isAdmin,
-                isBanned,
-                isMuted,
-                color,
-                token,
-                auth: 'ok'
-            };
+            if (isBanned) {
+                responseData = {
+                    userName, password, isAdmin, isBanned, isMuted, color, token,
+                    auth: `${userName} is banned by Admin`
+                };
+            } else {
+                responseData = {
+                    userName, password, isAdmin, isBanned, isMuted, color, token,
+                    auth: 'ok'
+                };
+            }
 
             const id = uuid.v4();
             console.log(`Updating session for user ${id}`);
@@ -226,9 +226,9 @@ wss.on('connection', (ws, request) => {
         loggedUsersArray = loggedUsersArray.filter(user => user.ws !== ws);
 
         const responseObject = {
+            type: 'responseUserExit',
             timeStamp: Date.now(),
             userName,
-            type: 'responseUserExit',
             message: `Chat message: ${userName} left chat...`
         };
 
@@ -239,7 +239,7 @@ wss.on('connection', (ws, request) => {
 
     ws.on('message', (message) => {
         if (process.env.NODE_ENV === 'development') {
-            console.log(`Received chat message: ${message} from user ${request.session.userId}, token=${request.session.token}`);
+            console.log(`Received chat message: ${message}`);
         }
 
         let requestObject = {};
@@ -268,9 +268,9 @@ wss.on('connection', (ws, request) => {
             User.findOne({userName})
                 .then(user => {
                     const responseObject = {
+                        type: 'responseGetUserInfo',
                         timeStamp: Date.now(),
                         userName,
-                        type: 'responseGetUserInfo',
                         data: user
                     };
 
@@ -308,9 +308,9 @@ wss.on('connection', (ws, request) => {
                     });
 
                     const responseObject = {
+                        type: 'responseGetOnlineUsersList',
                         timeStamp: Date.now(),
                         userName,
-                        type: 'responseGetOnlineUsersList',
                         data: array
                     };
 
@@ -339,9 +339,9 @@ wss.on('connection', (ws, request) => {
                     });
 
                     const responseObject = {
+                        type: 'responseGetBannedUsersList',
                         timeStamp: Date.now(),
                         userName,
-                        type: 'responseGetBannedUsersList',
                         data: array
                     };
 
@@ -363,9 +363,9 @@ wss.on('connection', (ws, request) => {
                     });
 
                     const responseObject = {
+                        type: 'responseNewUser',
                         timeStamp: Date.now(),
                         userName,
-                        type: 'responseNewUser',
                         message: `Chat message: ${userName} logged in chat...`
                     };
 
@@ -380,9 +380,9 @@ wss.on('connection', (ws, request) => {
             const responseObject = {
                 type: 'responseNewMessage',
                 timeStamp: Date.now(),
-                color: requestObject.color,
                 userName,
-                message: requestObject.message
+                message: requestObject.message,
+                color: requestObject.color
             };
 
             sendResponseBroadcast(responseObject);
@@ -396,9 +396,9 @@ wss.on('connection', (ws, request) => {
                         .then(saved => {
                             const text = requestObject.isMuted ? '' : 'un';
                             const responseObject = {
+                                type: 'responseSetIsMuted',
                                 timeStamp: Date.now(),
                                 userName,
-                                type: 'responseSetIsMuted',
                                 message: `Chat message: ${userName} is ${text}muted...`
                             };
 
@@ -421,9 +421,9 @@ wss.on('connection', (ws, request) => {
                         .then(saved => {
                             const text = requestObject.isBanned ? '' : 'un';
                             const responseObject = {
+                                type: 'responseSetIsBanned',
                                 timeStamp: Date.now(),
                                 userName,
-                                type: 'responseSetIsBanned',
                                 message: `Chat message: ${userName} is ${text}banned...`
                             };
 

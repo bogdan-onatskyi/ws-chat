@@ -1,3 +1,9 @@
+@keyframes blinkAuth {
+    0% {color: white}
+    50% {color: red}
+    100% {color: white}
+}
+
 .main {
     display: flex;
     justify-content: center;
@@ -5,6 +11,9 @@
         margin: 50px auto;
         input, button {
             margin: 5px auto;
+        }
+        &--auth {
+            animation: blinkAuth 2s linear infinite;
         }
     }
 }

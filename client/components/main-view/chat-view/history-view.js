@@ -24,20 +24,28 @@ class HistoryView extends Component {
             <div className="chat-view__chat--history">
                 {history.map((post, index) => {
                     const {type, timeStamp, userName, color, message} = post;
-                    const date = new Date(timeStamp);
                     const msgStyle = {color};
+
+                    const date = new Date(timeStamp);
                     const dateStr =
                         `${addZero(date.getDate())}.${addZero(date.getMonth())}.${date.getFullYear()} \
                         ${addZero(date.getHours())}:${addZero(date.getMinutes())}:${addZero(date.getSeconds())}`;
 
+                    const isUserMessage = type === 'responseNewMessage';
+
                     return (
-                        <div className="chat-view__chat--history-text" key={`post_${index}`}>
-                            <span className="chat-view__chat--history-text-timestamp">{dateStr}</span>
-                            <span className="chat-view__chat--history-text-message" style={msgStyle}>
-                                {type === 'responseNewMessage' &&
-                                    <span className="chat-view__chat--history-text-message-username">{userName}:</span>
+                        <div className="chat-view__chat--history--text" key={`post_${index}`}>
+                            <span className="chat-view__chat--history--text-timestamp">{dateStr}</span>
+                            <span className="chat-view__chat--history--text-message" style={msgStyle}>
+                                {isUserMessage &&
+                                    <span>
+                                        <span className="chat-view__chat--history--text-message--username">{userName}:</span>
+                                        <span className="chat-view__chat--history--text-message--user-message">{message}</span>
+                                    </span>
                                 }
-                                <span>{message}</span>
+                                {!isUserMessage &&
+                                    <span className="chat-view__chat--history--text-message--server-message">{message}</span>
+                                }
                             </span>
                         </div>
                     );
