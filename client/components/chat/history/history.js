@@ -1,6 +1,4 @@
 import React, {Component} from 'react';
-import {connect} from 'react-redux';
-import PropTypes from 'prop-types';
 
 const addZero = (num, digit = 2) => {
     let retStr = '';
@@ -13,9 +11,6 @@ const addZero = (num, digit = 2) => {
 };
 
 class HistoryView extends Component {
-    static PropTypes = {
-        history: PropTypes.array.isRequired,
-    };
 
     render = () => {
         const {history} = this.props;
@@ -55,16 +50,4 @@ class HistoryView extends Component {
     };
 }
 
-function mapStateToProps(state) {
-    return {
-        history: state.chat.history
-    };
-}
-
-function mapDispatchToProps(dispatch) {
-    return {
-        // setPassword: password => dispatch(setPassword(password)),
-    };
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(HistoryView);
+export default HistoryView;

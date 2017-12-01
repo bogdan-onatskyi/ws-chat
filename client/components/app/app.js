@@ -3,7 +3,7 @@ import {Provider} from 'react-redux';
 
 import configureStore from '../../store/configure-store';
 
-import MainView from '../main-view/main-view';
+import LoginView from '../login/login-view.connect';
 
 import './app.scss';
 
@@ -12,7 +12,7 @@ const store = configureStore();
 const Index = () => (
     <Provider store={store}>
         <main className="app">
-            <MainView/>
+            <LoginView/>
         </main>
     </Provider>
 );

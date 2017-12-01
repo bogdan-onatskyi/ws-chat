@@ -9,20 +9,11 @@ import InputGroup from 'react-bootstrap/es/InputGroup';
 import FormControl from 'react-bootstrap/es/FormControl';
 import Button from 'react-bootstrap/es/Button';
 
-import ChatView from './chat-view/chat-view';
+import ChatView from '../chat/chat-view.connect';
 
-import './main-view.scss';
+import './login-view.scss';
 
-class MainView extends Component {
-    static PropTypes = {
-        user: PropTypes.object.isRequired,
-
-        setAuth: PropTypes.func.isRequired,
-        setIsLoggedIn: PropTypes.func.isRequired,
-        setUserName: PropTypes.func.isRequired,
-        setPassword: PropTypes.func.isRequired,
-    };
-
+class LoginView extends Component {
     handleLogin = (e) => {
         e.preventDefault();
 
@@ -112,19 +103,4 @@ class MainView extends Component {
         : this.renderLoginForm();
 }
 
-function mapStateToProps(state) {
-    return {
-        user: state.user
-    };
-}
-
-function mapDispatchToProps(dispatch) {
-    return {
-        setAuth: bool => dispatch(require('../../actions/user-actions')._setAuth(bool)),
-        setIsLoggedIn: bool => dispatch(require('../../actions/user-actions')._setIsLoggedIn(bool)),
-        setUserName: userName => dispatch(require('../../actions/user-actions')._setUserName(userName)),
-        setPassword: password => dispatch(require('../../actions/user-actions')._setPassword(password)),
-    };
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(MainView);
+export default LoginView;

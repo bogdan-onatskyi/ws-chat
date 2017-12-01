@@ -1,23 +1,10 @@
 import React, {Component} from 'react';
-import {connect} from 'react-redux';
-import PropTypes from 'prop-types';
 import cn from 'classnames';
 
 import Col from "react-bootstrap/es/Col";
 import Glyphicon from "react-bootstrap/es/Glyphicon";
 
-// import './users-list-view.scss';
-
 class UsersListView extends Component {
-    static PropTypes = {
-        isAdmin: PropTypes.bool.isRequired,
-
-        onlineUsersList: PropTypes.array.isRequired,
-        bannedUsersList: PropTypes.array.isRequired,
-
-        handleIsMuted: PropTypes.func.isRequired,
-        handleIsBanned: PropTypes.func.isRequired,
-    };
 
     setIsMuted = (onlineIndex, bannedIndex) => {
         if (this.props.isAdmin) {
@@ -103,19 +90,4 @@ class UsersListView extends Component {
     }
 }
 
-function mapStateToProps(state) {
-    return {
-        onlineUsersList: state.usersList.onlineUsersList,
-        bannedUsersList: state.usersList.bannedUsersList,
-    };
-}
-
-// function mapDispatchToProps(dispatch) {
-//     return {
-//         setIsMuted: bool => dispatch(setIsMuted(bool)),
-//         setIsBanned: bool => dispatch(setIsBanned(bool)),
-//     };
-// }
-
-export default connect(mapStateToProps)(UsersListView);
-// export default connect(mapStateToProps, mapDispatchToProps)(UsersListView);
+export default UsersListView;
