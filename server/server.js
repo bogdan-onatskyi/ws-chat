@@ -352,6 +352,37 @@ wss.on('connection', (ws, request) => {
                 });
         };
 
+        const getAllUsersList = () => {
+            User.find({})
+                .then(users => {
+                    const array = [];
+
+                    users.forEach(user => {
+                        const {userName, isAdmin, isBanned, isMuted, color} = user;
+                        array.push({
+                            userName, isAdmin, isBanned, isMuted, color
+                        });
+                    });
+
+                    array.sort((a, b) => {
+                        if (a.userName > b.userName) return 1;
+                        if (a.userName < b.userName) return -1;
+                    });
+
+                    const responseObject = {
+                        type: 'responseGetAllUsersList',
+                        timeStamp: Date.now(),
+                        userName,
+                        data: array
+                    };
+
+                    sendResponse(responseObject);
+                })
+                .catch(err => {
+                    console.log(err);
+                });
+        };
+
         const newUser = () => {
             User.findOne({userName})
                 .then(user => {
@@ -449,6 +480,10 @@ wss.on('connection', (ws, request) => {
 
             case 'getBannedUsersList':
                 getBannedUsersList();
+                return;
+
+            case 'getAllUsersList':
+                getAllUsersList();
                 return;
 
             case 'newUser':

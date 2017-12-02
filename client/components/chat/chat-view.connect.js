@@ -25,6 +25,7 @@ ChatView.PropTypes = {
 
     setOnlineUsersList: PropTypes.func.isRequired,
     setBannedUsersList: PropTypes.func.isRequired,
+    setAllUsersList: PropTypes.func.isRequired,
     clearUsersList: PropTypes.func.isRequired,
 
     setIsLoggedIn: PropTypes.func.isRequired,
@@ -42,6 +43,7 @@ function mapStateToProps(state) {
 
         onlineUsersList: state.usersList.onlineUsersList,
         bannedUsersList: state.usersList.bannedUsersList,
+        allUsersList: state.usersList.allUsersList,
     };
 }
 
@@ -57,6 +59,7 @@ function mapDispatchToProps(dispatch) {
 
         setOnlineUsersList: data => dispatch(require('../../actions/users-list-actions')._setOnlineUsersList(data)),
         setBannedUsersList: data => dispatch(require('../../actions/users-list-actions')._setBannedUsersList(data)),
+        setAllUsersList: data => dispatch(require('../../actions/users-list-actions')._setAllUsersList(data)),
         clearUsersList: data => dispatch(require('../../actions/users-list-actions')._clearUsersList(data)),
 
         setIsLoggedIn: bool => dispatch(require('../../actions/user-actions')._setIsLoggedIn(bool)),

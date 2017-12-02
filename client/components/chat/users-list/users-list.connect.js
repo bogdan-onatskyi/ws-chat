@@ -9,6 +9,7 @@ UsersListView.PropTypes = {
 
     onlineUsersList: PropTypes.array.isRequired,
     bannedUsersList: PropTypes.array.isRequired,
+    allUsersList: PropTypes.array.isRequired,
 
     handleIsMuted: PropTypes.func.isRequired,
     handleIsBanned: PropTypes.func.isRequired,
@@ -19,6 +20,7 @@ function mapStateToProps(state) {
     return {
         onlineUsersList: state.usersList.onlineUsersList,
         bannedUsersList: state.usersList.bannedUsersList,
+        allUsersList: state.usersList.allUsersList,
     };
 }
 

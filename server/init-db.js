@@ -27,9 +27,19 @@ const generateToken = () => {
 
 const adminColor = '#8A1631';
 const userColors = [
-    '#A6206C', '#167764', '#0B4571', '#49296A', '#4E2114', '#444247'
+    '#167764',
+    '#0B4571',
+    '#4E2114',
+    '#49296A',
+    '#A6206C',
+    '#444247'
 ];
-const getUserColor = () => userColors[Math.random() * userColors.length ^ 0];
+const getUserColor = index => {
+    if (index === undefined)
+        return userColors[Math.random() * userColors.length ^ 0];
+
+    return userColors[index];
+};
 
 const initData = () => {
 
@@ -51,7 +61,7 @@ const initData = () => {
         isAdmin: false,
         isBanned: false,
         isMuted: false,
-        color: getUserColor(),
+        color: getUserColor(0),
         token: generateToken()
     }));
 
@@ -61,7 +71,7 @@ const initData = () => {
         isAdmin: false,
         isBanned: false,
         isMuted: false,
-        color: getUserColor(),
+        color: getUserColor(1),
         token: generateToken()
     }));
 
@@ -71,7 +81,7 @@ const initData = () => {
         isAdmin: false,
         isBanned: false,
         isMuted: false,
-        color: getUserColor(),
+        color: getUserColor(2),
         token: generateToken()
     }));
 
@@ -81,7 +91,7 @@ const initData = () => {
         isAdmin: false,
         isBanned: false,
         isMuted: false,
-        color: getUserColor(),
+        color: getUserColor(3),
         token: generateToken()
     }));
 

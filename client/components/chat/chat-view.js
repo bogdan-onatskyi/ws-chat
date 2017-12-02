@@ -51,9 +51,25 @@ class ChatView extends Component {
         };
 
         const getBannedUsersList = () => {
-            const {userName} = this.props.user;
+            const {userName, isAdmin} = this.props.user;
+
+            if (!isAdmin) return;
+
             const requestObject = {
                 type: 'getBannedUsersList',
+                userName
+            };
+
+            this.socket.send(JSON.stringify(requestObject));
+        };
+
+        const getAllUsersList = () => {
+            const {userName, isAdmin} = this.props.user;
+
+            if (!isAdmin) return;
+
+            const requestObject = {
+                type: 'getAllUsersList',
                 userName
             };
 
@@ -63,6 +79,7 @@ class ChatView extends Component {
         const getUsersList = () => {
             getOnlineUsersList();
             getBannedUsersList();
+            getAllUsersList();
         };
 
         this.socket.onopen = () => {
@@ -78,7 +95,7 @@ class ChatView extends Component {
 
             const {
                 setUserInfo, setMessage,
-                setOnlineUsersList, setBannedUsersList,
+                setOnlineUsersList, setBannedUsersList, setAllUsersList,
                 setIsLoggedIn, setIsMuted, setIsBanned,
                 addPostToHistory
             } = this.props;
@@ -119,6 +136,19 @@ class ChatView extends Component {
                             setIsBanned(bannedUser.isBanned);
                             setMessage('');
                             if (bannedUser.isBanned) setIsLoggedIn(false);
+                        }
+                    });
+                    return;
+
+                case 'responseGetAllUsersList':
+                    setAllUsersList(receivedObject.data);
+
+                    receivedObject.data.forEach(user => {
+                        if (this.props.user.userName === user.userName) {
+                            setIsMuted(user.isMuted);
+                            setIsBanned(user.isBanned);
+                            setMessage('');
+                            if (user.isBanned) setIsLoggedIn(false);
                         }
                     });
                     return;
